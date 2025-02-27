@@ -1,6 +1,11 @@
 {
     "name": "nodejs-mongodb-game",
     "version": "1.0.0",
+    "description": "Node.js and MongoDB Game",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
     "dependencies": {
         "express": "^4.17.1",
         "mongoose": "^8.11.0",
