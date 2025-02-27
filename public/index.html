@@ -523,6 +523,7 @@
 
   <!-- Add the audio element -->
   <audio id="errorSound" src="assets/sounds/Microsoft_Windows_XP_Error.m4a" preload="auto"></audio>
+  <audio id="clickSound" src="assets/sounds/Windows_XP_Startup.mp3" preload="auto"></audio>
 
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
@@ -782,6 +783,9 @@
       // Clone and play the error sound
       const errorSound = document.getElementById('errorSound').cloneNode();
       errorSound.play();
+      // Clone and play the click sound
+      const clickSound = document.getElementById('clickSound').cloneNode();
+      clickSound.play();
 
       let clickValue = calculateClickValue();
 
