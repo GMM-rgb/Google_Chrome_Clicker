@@ -51,3 +51,10 @@ jobs:
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
           appdir: "build"
+
+# The deploy.yml workflow file is similar to the express.yml workflow file, but with a few key differences:
+# - The deploy.yml workflow file is triggered by a push event on the main branch.
+# - The deploy.yml workflow file sets up the project structure by creating a build directory and copying the necessary files into it.
+# - The deploy.yml workflow file creates a Procfile for hosting platforms.
+# - The deploy.yml workflow file installs the Heroku CLI and sets the Heroku remote.
+# - The deploy.yml workflow file deploys the application to Heroku using the akhileshns/heroku-deploy action.
