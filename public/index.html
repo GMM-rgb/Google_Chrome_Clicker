@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html=5.0>
 <html lang="en">
 
 <head>
@@ -521,9 +521,12 @@
     <button id="finishButton" class="finish-button">Launch Chrome!</button>
   </div>
 
-  <!-- Add the audio element -->
+  <!-- Add the audio elements -->
   <audio id="errorSound" src="assets/sounds/Microsoft_Windows_XP_Error.m4a" preload="auto"></audio>
   <audio id="clickSound" src="assets/sounds/Windows_XP_Startup.mp3" preload="auto"></audio>
+  <audio id="notificationSound" src="assets/sounds/notification.mp3" preload="auto"></audio>
+  <audio id="buttonSound" src="assets/sounds/button_click.mp3" preload="auto"></audio>
+  <audio id="backgroundMusic" src="assets/sounds/background_music.mp3" preload="auto" loop="on"></audio>
 
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
@@ -736,6 +739,7 @@
       const finishButton = document.getElementById('finishButton');
       const victoryOverlay = document.getElementById('victoryOverlay');
       const victoryButton = document.getElementById('victoryButton');
+      const backgroundMusic = document.getElementById('backgroundMusic');
 
       function attachEventListeners() {
         // Re-select storeItems here after the DOM is fully loaded
@@ -748,30 +752,38 @@
             const type = item.dataset.type;
             const baseCost = parseInt(item.dataset.cost);
             buyUpgrade(type, baseCost);
+            playButtonSound();
           });
         });
 
         expandStoreBtn.addEventListener('click', () => {
           expandedStore.classList.add('active');
           setZIndex(expandedStore, 1000);
+          playButtonSound();
         });
 
         closeExpandedBtn.addEventListener('click', () => {
           expandedStore.classList.remove('active');
           setZIndex(expandedStore, -1);
+          playButtonSound();
         });
 
         finishButton.addEventListener('click', () => {
           launchChrome();
+          playButtonSound();
         });
 
         victoryButton.addEventListener('click', () => {
           resetGame();
+          playButtonSound();
         });
       }
 
       attachEventListeners();
       loadGame();
+
+      // Start background music with a delay between loops
+      playBackgroundMusic();
     };
 
     function setZIndex(element, zIndex) {
@@ -780,6 +792,15 @@
 
     function wait(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Play background music with a delay between loops
+    async function playBackgroundMusic() {
+      const backgroundMusic = document.getElementById('backgroundMusic');
+      while (true) {
+        backgroundMusic.play();
+        await wait(backgroundMusic.duration * 1000 + 5000); // 5 seconds pause between loops
+      }
     }
 
     // Handle click event
@@ -818,6 +839,18 @@
       checkCompletion();
       clickSound.play();
       saveGame();
+    }
+
+    // Play button sound
+    function playButtonSound() {
+      const buttonSound = document.getElementById('buttonSound').cloneNode();
+      buttonSound.play();
+    }
+
+    // Play notification sound
+    function playNotificationSound() {
+      const notificationSound = document.getElementById('notificationSound').cloneNode();
+      notificationSound.play();
     }
 
     // Calculate click value
@@ -985,6 +1018,7 @@
         autoMergeBtn.textContent = 'Auto-Merge';
         autoMergeBtn.addEventListener('click', () => {
           autoMergeCategory(type);
+          playButtonSound();
         });
         categoryGroup.appendChild(autoMergeBtn);
 
@@ -1016,6 +1050,7 @@
         selectedUpgrade = upgrade;
         upgradeCard.classList.add('selected');
       }
+      playButtonSound();
     }
 
     // Merge upgrades
@@ -1199,6 +1234,7 @@
       const notif = document.getElementById('notification');
       notif.textContent = message;
       notif.classList.add('show');
+      playNotificationSound();
       setTimeout(() => {
         notif.classList.remove('show');
       }, 3000);
