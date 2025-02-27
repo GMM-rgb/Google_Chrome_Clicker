@@ -17,17 +17,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Add build step here if needed (e.g., npm run build)
+      # - name: Build
+      #   run: |
+      #     npm install
+      #     npm run build
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: './'
+          path: ./ # Or your build output directory (e.g., './dist')
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
         with:
-          artifact-name: '.'
-          target-folder: './'
-          commit-message: 'Deploy static content to GitHub Pages'
-          publish_branch: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
+          branch: gh-pages  # Correct parameter name
+          commit-message: 'Deploy static content to GitHub Pages'  # Optional
