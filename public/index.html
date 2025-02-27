@@ -526,7 +526,7 @@
   <audio id="clickSound" src="assets/sounds/Windows_XP_Startup.mp3" preload="auto"></audio>
   <audio id="notificationSound" src="assets/sounds/notification.mp3" preload="auto"></audio>
   <audio id="buttonSound" src="assets/sounds/button_click.mp3" preload="auto"></audio>
-  <audio id="backgroundMusic" src="assets/sounds/background_music.mp3" preload="auto" loop="on"></audio>
+  <audio id="backgroundMusic" src="assets/sounds/background_music.mp3" preload="auto" loop></audio>
 
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
@@ -740,6 +740,7 @@
       const victoryOverlay = document.getElementById('victoryOverlay');
       const victoryButton = document.getElementById('victoryButton');
       const backgroundMusic = document.getElementById('backgroundMusic');
+      backgroundMusic.volume = 0.5; // Set volume to 50%
 
       function attachEventListeners() {
         // Re-select storeItems here after the DOM is fully loaded
@@ -777,13 +778,13 @@
           resetGame();
           playButtonSound();
         });
+
+        // Start background music after user interaction
+        document.body.addEventListener('click', startBackgroundMusic, { once: true });
       }
 
       attachEventListeners();
       loadGame();
-
-      // Start background music with a delay between loops
-      playBackgroundMusic();
     };
 
     function setZIndex(element, zIndex) {
@@ -795,11 +796,13 @@
     }
 
     // Play background music with a delay between loops
-    async function playBackgroundMusic() {
+    async function startBackgroundMusic() {
       const backgroundMusic = document.getElementById('backgroundMusic');
       while (true) {
         backgroundMusic.play();
-        await wait(backgroundMusic.duration * 1000 + 5000); // 5 seconds pause between loops
+        await wait(backgroundMusic.duration * 1000);
+        backgroundMusic.pause();
+        await wait(10000); // 10 seconds pause between loops
       }
     }
 
