@@ -521,6 +521,9 @@
     <button id="finishButton" class="finish-button">Launch Chrome!</button>
   </div>
 
+  <!-- Add the audio element -->
+  <audio id="errorSound" src="Microsoft_Windows_XP_Error.m4a" preload="auto"></audio>
+
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
     <div class="corner-indicator"></div>
@@ -776,6 +779,10 @@
 
     // Handle click event
     function handleClick() {
+      // Play the error sound
+      const errorSound = document.getElementById('errorSound');
+      errorSound.play();
+
       let clickValue = calculateClickValue();
 
       // Critical Click Logic
