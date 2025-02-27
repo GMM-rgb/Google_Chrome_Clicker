@@ -27,7 +27,3 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
-        with:
-          artifact: public
-          branch: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }}
