@@ -14,3 +14,6 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
+    
+// This code is pretty straightforward. We’re creating an Express server that serves static files from the  public  folder.
+// We’re also setting up a catch-all route to serve the  index.html  file for SPA compatibility. Finally, we’re starting the server on port 3000.
