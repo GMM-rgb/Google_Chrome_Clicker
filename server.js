@@ -14,9 +14,9 @@ app.post('/api/data', (req, res) => {
 
 // Catch-all route to serve index.html for SPA compatibility
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'root/', 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
