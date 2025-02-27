@@ -17,13 +17,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v2
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: './public'
+          path: './'
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
+        with:
+          artifact-name: '.'
+          target-folder: './'
+          commit-message: 'Deploy static content to GitHub Pages'
+          publish_branch: gh-pages
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
