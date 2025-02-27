@@ -3,8 +3,6 @@ name: Deploy static content to GitHub Pages
 on:
   push:
     branches: ["main"]
-    paths:
-      - "public/**"
 
 permissions:
   contents: read
@@ -24,7 +22,7 @@ jobs:
       - name: Upload static files
         uses: actions/upload-pages-artifact@v4
         with:
-          path: './public'
+          path: 'public'
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
