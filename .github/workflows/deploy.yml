@@ -36,7 +36,13 @@ jobs:
         run: curl https://cli-assets.heroku.com/install.sh | sh
         
       - name: Set Heroku remote
-        run: heroku git:remote -a "${{ secrets.HEROKU_APP_NAME }}"
+        run: |
+          if [ -n "${{ secrets.HEROKU_APP_NAME }}" ]; then
+            heroku git:remote -a "${{ secrets.HEROKU_APP_NAME }}"
+          else
+            echo "HEROKU_APP_NAME is not set"
+            exit 1
+          fi
         
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v3.12.14
