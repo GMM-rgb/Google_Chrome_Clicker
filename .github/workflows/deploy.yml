@@ -3,8 +3,6 @@ name: Deploy static content to GitHub Pages
 on:
   push:
     branches: ["main"]
-    paths:
-      - "public/**"
 
 permissions:
   contents: read
