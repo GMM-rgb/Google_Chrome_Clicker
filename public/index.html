@@ -779,8 +779,8 @@
 
     // Handle click event
     function handleClick() {
-      // Play the error sound
-      const errorSound = document.getElementById('errorSound');
+      // Clone and play the error sound
+      const errorSound = document.getElementById('errorSound').cloneNode();
       errorSound.play();
 
       let clickValue = calculateClickValue();
