@@ -778,14 +778,20 @@
       element.style.zIndex = zIndex;
     }
 
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     // Handle click event
     function handleClick() {
-      // Clone and play the error sound
-      const errorSound = document.getElementById('errorSound').cloneNode();
-      errorSound.play();
+      wait(2100).then(() => {
+        createErrorMessage();
+        // Clone and play the error sound
+        const errorSound = document.getElementById('errorSound').cloneNode();
+        errorSound.play();
+      });
       // Clone and play the click sound
-      const clickSound = document.getElementById('clickSound').cloneNode();
-      clickSound.play();
+      const clickSound = document.getElementById('clickSound');
 
       let clickValue = calculateClickValue();
 
@@ -808,9 +814,9 @@
       }
 
       score += clickValue;
-      createErrorMessage();
       updateDisplay();
       checkCompletion();
+      clickSound.play();
       saveGame();
     }
 
