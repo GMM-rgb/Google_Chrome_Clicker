@@ -476,6 +476,57 @@
       -webkit-text-stroke: #1976d2 2px;
       -webkit-text-fill-color: #2196F3;
     }
+
+    /* CPU Card Styles */
+    .cpu-card {
+      background: #1a1a1a;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px 0;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    }
+
+    .cpu-circuits {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+          linear-gradient(90deg, transparent 50%, rgba(0,255,255,0.1) 50%),
+          linear-gradient(0deg, transparent 50%, rgba(0,255,255,0.1) 50%);
+      background-size: 20px 20px;
+      animation: circuitFlow 2s linear infinite;
+    }
+
+    @keyframes circuitFlow {
+      from { background-position: 0 0; }
+      to { background-position: 20px 20px; }
+    }
+
+    .cpu-content {
+      position: relative;
+      z-index: 1;
+      color: #00ffff;
+    }
+
+    .cpu-upgrade-btn {
+      background: rgba(0, 255, 255, 0.2);
+      border: 1px solid #00ffff;
+      color: #00ffff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .cpu-upgrade-btn:hover {
+      background: rgba(0, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
   </style>
 </head>
 
@@ -516,6 +567,16 @@
           <h3>Speed Booster</h3>
           <p>Makes auto-clickers click faster</p>
           <p>Cost: $<span class="cost">200</span></p>
+        </div>
+        <div class="store-item" data-type="modular-cpu" data-cost="75000">
+          <h3>Modular CPU</h3>
+          <p>Unlocks CPU Core upgrades</p>
+          <p>Cost: $<span class="cost">75000</span></p>
+        </div>
+        <div class="store-item" data-type="hyper-ai" data-cost="500000">
+          <h3>Hyper Algorithms</h3>
+          <p>5x faster AI Assistant with previous AI speed bonus</p>
+          <p>Cost: $<span class="cost">500000</span></p>
         </div>
       </div>
     </div>
@@ -642,6 +703,8 @@
     let aiAssistantActive = false;
     let aiAssistantInterval = null;
     const completionThreshold = 1e12; // 1,000,000,000,000 for finish button
+    let hyperAIActive = false;
+    let cpuUnlocked = false;
 
     // Error messages for clicking
     const errorMessages = [
@@ -995,6 +1058,12 @@
           case 'quantum-internet':
             // Mega click chance handled in handleClick
             break;
+          case 'modular-cpu':
+            cpuUnlocked = true;
+            break;
+          case 'hyper-ai':
+            activateHyperAI();
+            break;
           default:
             console.warn(`Unknown upgrade type: ${type}`);
             return;
@@ -1041,6 +1110,25 @@
       const workspace = document.getElementById('workspace');
       workspace.innerHTML = ''; // Clear existing upgrades
       const groupedUpgrades = groupBy(upgrades, 'type');
+
+      if (cpuUnlocked) {
+        const cpuCard = document.createElement('div');
+        cpuCard.className = 'cpu-card';
+        
+        const circuits = document.createElement('div');
+        circuits.className = 'cpu-circuits';
+        cpuCard.appendChild(circuits);
+
+        const content = document.createElement('div');
+        content.className = 'cpu-content';
+        content.innerHTML = `
+            <h3>CPU Core Control</h3>
+            <p>Current Cores: ${upgrades.filter(u => u.type === 'cpu-core').length}</p>
+            <button class="cpu-upgrade-btn" onclick="buyCPUCore()">Add Core ($${calculateCurrentCost('cpu-core', 10000)})</button>
+        `;
+        cpuCard.appendChild(content);
+        workspace.appendChild(cpuCard);
+      }
 
       for (let type in groupedUpgrades) {
         const categoryGroup = document.createElement('div');
@@ -1167,6 +1255,64 @@
       }
     }
 
+    // Add Hyper AI activation function
+    function activateHyperAI() {
+      if (!hyperAIActive) {
+        hyperAIActive = true;
+        if (aiAssistantInterval) {
+          clearInterval(aiAssistantInterval);
+        }
+        
+        const baseSpeed = 5000;
+        const aiUpgrades = upgrades.filter(u => u.type === 'ai').length;
+        const cpuCores = upgrades.filter(u => u.type === 'cpu-core').length;
+        const interval = baseSpeed / (5 * (1 + aiUpgrades * 0.2 + cpuCores * 0.5));
+        
+        aiAssistantInterval = setInterval(() => {
+          const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
+            .filter(item => {
+              const type = item.dataset.type;
+              const baseCost = parseInt(item.dataset.cost);
+              const currentCost = calculateCurrentCost(type, baseCost);
+              return score >= currentCost;
+            })
+            .sort((a, b) => {
+              const costB = calculateCurrentCost(b.dataset.type, parseInt(b.dataset.cost));
+              const costA = calculateCurrentCost(a.dataset.type, parseInt(a.dataset.cost));
+              return costB - costA;
+            });
+
+          if (affordableUpgrades.length > 0) {
+            const bestUpgrade = affordableUpgrades[0];
+            buyUpgrade(bestUpgrade.dataset.type, parseInt(bestUpgrade.dataset.cost));
+          }
+        }, interval);
+        
+        showNotification('Hyper AI activated! Processing at maximum efficiency!');
+      }
+    }
+
+    // Add CPU Core purchase function
+    function buyCPUCore() {
+      const baseCost = 10000;
+      const currentCost = calculateCurrentCost('cpu-core', baseCost);
+      
+      if (score >= currentCost) {
+        score -= currentCost;
+        upgrades.push({
+          type: 'cpu-core',
+          value: 1,
+          totalSpent: currentCost
+        });
+        updateDisplay();
+        saveGame();
+        showNotification('CPU Core added!');
+        playButtonSound();
+      } else {
+        showNotification('Not enough clicks for CPU Core upgrade');
+      }
+    }
+
     // Main game loop
     function gameLoop() {
       const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
@@ -1204,7 +1350,12 @@
       updateStorePrices();
       checkCompletion();
 
-      if (upgrades.some(u => u.type === 'ai')) {
+      cpuUnlocked = localStorage.getItem('cpuUnlocked') === 'true';
+      hyperAIActive = localStorage.getItem('hyperAIActive') === 'true';
+      
+      if (hyperAIActive) {
+        activateHyperAI();
+      } else if (upgrades.some(u => u.type === 'ai')) {
         activateAIAssistant();
       }
     }
@@ -1213,6 +1364,8 @@
     function saveGame() {
       localStorage.setItem('score', score);
       localStorage.setItem('upgrades', JSON.stringify(upgrades));
+      localStorage.setItem('cpuUnlocked', cpuUnlocked);
+      localStorage.setItem('hyperAIActive', hyperAIActive);
     }
 
     // Update display
