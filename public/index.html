@@ -1535,6 +1535,7 @@
 
       cpuUnlocked = localStorage.getItem('cpuUnlocked') === 'true';
       hyperAIActive = localStorage.getItem('hyperAIActive') === 'true';
+      modularCpuInstalled = localStorage.getItem('modularCpuInstalled') === 'true';
       
       if (hyperAIActive) {
         activateHyperAI();
@@ -1556,6 +1557,7 @@
       localStorage.setItem('upgrades', JSON.stringify(upgrades));
       localStorage.setItem('cpuUnlocked', cpuUnlocked);
       localStorage.setItem('hyperAIActive', hyperAIActive);
+      localStorage.setItem('modularCpuInstalled', modularCpuInstalled);
     }
 
     // Update display
