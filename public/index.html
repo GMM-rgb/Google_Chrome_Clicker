@@ -614,6 +614,7 @@
       width: 100%;
       margin: 10px 0;
       -webkit-appearance: none;
+      appearance: none;
       background: rgba(77, 77, 255, 0.2);
       height: 8px;
       border-radius: 4px;
@@ -1397,11 +1398,12 @@
 
     // Activate AI Assistant
     function activateAIAssistant() {
-      if (!aiAssistantActive) {
+      if (!aiAssistantActive && aiEnabled) {
         aiAssistantActive = true;
         showNotification("AI Assistant activated! Auto-purchasing upgrades when affordable.");
 
         aiAssistantInterval = setInterval(() => {
+          if (!aiEnabled) return;
           const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
             .filter(item => {
               const type = item.dataset.type;
@@ -1419,13 +1421,13 @@
             const bestUpgrade = affordableUpgrades[0];
             buyUpgrade(bestUpgrade.dataset.type, parseInt(bestUpgrade.dataset.cost));
           }
-        }, 5000);
+        }, 2000); // Reduced frequency to 2 seconds
       }
     }
 
     // Add Hyper AI activation function
     function activateHyperAI() {
-      if (!hyperAIActive) {
+      if (!hyperAIActive && aiEnabled) {
         hyperAIActive = true;
         if (aiAssistantInterval) {
           clearInterval(aiAssistantInterval);
@@ -1434,9 +1436,13 @@
         const baseSpeed = 5000;
         const aiUpgrades = upgrades.filter(u => u.type === 'ai').length;
         const cpuCores = upgrades.filter(u => u.type === 'cpu-core').length;
-        const interval = baseSpeed / (5 * (1 + aiUpgrades * 0.2 + cpuCores * 0.5));
+        let interval = baseSpeed / (5 * (1 + aiUpgrades * 0.2 + cpuCores * 0.5));
+        
+        // Ensure minimum interval of 500ms to prevent excessive updates
+        interval = Math.max(interval, 500);
         
         aiAssistantInterval = setInterval(() => {
+          if (!aiEnabled) return;
           const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
             .filter(item => {
               const type = item.dataset.type;
@@ -1498,13 +1504,21 @@
 
       if (autoClickerValue > 0) {
         score += autoClickerValue;
-        updateDisplay();
+        // Update score display without full re-render
+        scoreDisplay.textContent = score.toFixed(0);
         checkCompletion();
         saveGame();
+        
+        // Only do full render every second
+        if (Date.now() - lastRenderTime > 1000) {
+          debouncedRenderUpgrades();
+          lastRenderTime = Date.now();
+        }
       }
     }
 
-    let gameLoopInterval = setInterval(gameLoop, 1000 / speedMultiplier);
+    // Add this with other game variables
+    let lastRenderTime = Date.now();
 
     function updateGameLoopInterval() {
       clearInterval(gameLoopInterval);
@@ -1546,8 +1560,15 @@
     // Update display
     function updateDisplay() {
       scoreDisplay.textContent = score.toFixed(0);
-      renderUpgrades();
+      debouncedRenderUpgrades();
     }
+
+    // Create debounced version of renderUpgrades
+    const debouncedRenderUpgrades = debounce(() => {
+        requestAnimationFrame(() => {
+            renderUpgrades();
+        });
+    }, 100); // Only update every 100ms at most
 
     // Check completion
     function checkCompletion() {
@@ -1703,6 +1724,19 @@
         return score >= cost && cost <= aiSpendingLimit;
       })
       .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
+
+    // Add these utility functions near the top
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
   </script>
 </body>
 
