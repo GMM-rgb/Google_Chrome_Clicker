@@ -1398,72 +1398,44 @@
 
     // Activate AI Assistant
     function activateAIAssistant() {
-      if (!aiAssistantActive && aiEnabled) {
-        aiAssistantActive = true;
-        showNotification("AI Assistant activated! Auto-purchasing upgrades when affordable.");
-
-        aiAssistantInterval = setInterval(() => {
-          if (!aiEnabled) return;
-          const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
-            .filter(item => {
-              const type = item.dataset.type;
-              const baseCost = parseInt(item.dataset.cost);
-              const currentCost = calculateCurrentCost(type, baseCost);
-              return score >= currentCost;
-            })
-            .sort((a, b) => {
-              const costA = calculateCurrentCost(a.dataset.type, parseInt(a.dataset.cost));
-              const costB = calculateCurrentCost(b.dataset.type, parseInt(b.dataset.cost));
-              return costB - costA;
-            });
-
-          if (affordableUpgrades.length > 0) {
-            const bestUpgrade = affordableUpgrades[0];
-            buyUpgrade(bestUpgrade.dataset.type, parseInt(bestUpgrade.dataset.cost));
-          }
-        }, 2000); // Reduced frequency to 2 seconds
-      }
+        if (!aiAssistantActive && aiEnabled) {
+            aiAssistantActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = calculateAIInterval(false);
+            console.log('AI Assistant Interval:', interval);
+            
+            aiAssistantInterval = setInterval(() => {
+                if (!aiEnabled) return;
+                processAIAction();
+            }, interval);
+            
+            showNotification("AI Assistant activated!");
+            saveAIState();
+        }
     }
 
     // Add Hyper AI activation function
     function activateHyperAI() {
-      if (!hyperAIActive && aiEnabled) {
-        hyperAIActive = true;
-        if (aiAssistantInterval) {
-          clearInterval(aiAssistantInterval);
+        if (!hyperAIActive && aiEnabled) {
+            hyperAIActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = calculateAIInterval(true);
+            console.log('Hyper AI Interval:', interval);
+            
+            aiAssistantInterval = setInterval(() => {
+                if (!aiEnabled) return;
+                processAIAction();
+            }, interval);
+            
+            showNotification('Hyper AI activated!');
+            saveAIState();
         }
-        
-        const baseSpeed = 5000;
-        const aiUpgrades = upgrades.filter(u => u.type === 'ai').length;
-        const cpuCores = upgrades.filter(u => u.type === 'cpu-core').length;
-        let interval = baseSpeed / (5 * (1 + aiUpgrades * 0.2 + cpuCores * 0.5));
-        
-        // Ensure minimum interval of 500ms to prevent excessive updates
-        interval = Math.max(interval, 500);
-        
-        aiAssistantInterval = setInterval(() => {
-          if (!aiEnabled) return;
-          const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
-            .filter(item => {
-              const type = item.dataset.type;
-              const baseCost = parseInt(item.dataset.cost);
-              const currentCost = calculateCurrentCost(type, baseCost);
-              return score >= currentCost;
-            })
-            .sort((a, b) => {
-              const costB = calculateCurrentCost(b.dataset.type, parseInt(b.dataset.cost));
-              const costA = calculateCurrentCost(a.dataset.type, parseInt(a.dataset.cost));
-              return costB - costA;
-            });
-
-          if (affordableUpgrades.length > 0) {
-            const bestUpgrade = affordableUpgrades[0];
-            buyUpgrade(bestUpgrade.dataset.type, parseInt(bestUpgrade.dataset.cost));
-          }
-        }, interval);
-        
-        showNotification('Hyper AI activated! Processing at maximum efficiency!');
-      }
     }
 
     // Add CPU Core purchase function
@@ -1737,6 +1709,187 @@
             timeout = setTimeout(later, wait);
         };
     }
+
+    // Add to game variables
+    const AI_CONFIG = {
+        minInterval: 750,  // Minimum 750ms between actions
+        maxInterval: 2000, // Maximum 2s between actions
+        baseSpeed: 1500,   // Base speed of 1.5s
+        speedMultiplier: {
+            ai: 0.2,       // Speed bonus per AI upgrade
+            hyperAi: 0.5,  // Speed bonus for Hyper AI
+            cpuCore: 0.1   // Speed bonus per CPU core
+        }
+    };
+
+    // Modify AI Assistant activation
+    function activateAIAssistant() {
+        if (!aiAssistantActive && aiEnabled) {
+            aiAssistantActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = calculateAIInterval(false);
+            console.log('AI Assistant Interval:', interval);
+            
+            aiAssistantInterval = setInterval(() => {
+                if (!aiEnabled) return;
+                processAIAction();
+            }, interval);
+            
+            showNotification("AI Assistant activated!");
+            saveAIState();
+        }
+    }
+
+    // Modify Hyper AI activation
+    function activateHyperAI() {
+        if (!hyperAIActive && aiEnabled) {
+            hyperAIActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = calculateAIInterval(true);
+            console.log('Hyper AI Interval:', interval);
+            
+            aiAssistantInterval = setInterval(() => {
+                if (!aiEnabled) return;
+                processAIAction();
+            }, interval);
+            
+            showNotification('Hyper AI activated!');
+            saveAIState();
+        }
+    }
+
+    // Add new AI helper functions
+    function calculateAIInterval(isHyper) {
+        const aiCount = upgrades.filter(u => u.type === 'ai').length;
+        const cpuCores = upgrades.filter(u => u.type === 'cpu-core').length;
+        
+        let speedBonus = aiCount * AI_CONFIG.speedMultiplier.ai;
+        speedBonus += cpuCores * AI_CONFIG.speedMultiplier.cpuCore;
+        
+        if (isHyper) {
+            speedBonus += AI_CONFIG.speedMultiplier.hyperAi;
+        }
+        
+        const interval = AI_CONFIG.baseSpeed / (1 + speedBonus);
+        
+        // Clamp interval between min and max values
+        return Math.max(AI_CONFIG.minInterval, 
+               Math.min(AI_CONFIG.maxInterval, interval));
+    }
+
+    function processAIAction() {
+        try {
+            if (!aiEnabled || score <= 0) return;
+            
+            const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
+                .filter(item => {
+                    const type = item.dataset.type;
+                    const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
+                    return score >= cost && 
+                           cost <= aiSpendingLimit && 
+                           isValidUpgrade(type);
+                })
+                .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
+
+            if (affordableUpgrades.length > 0) {
+                const bestUpgrade = affordableUpgrades[0];
+                requestAnimationFrame(() => {
+                    buyUpgrade(bestUpgrade.dataset.type, 
+                             parseInt(bestUpgrade.dataset.cost));
+                });
+            }
+        } catch (error) {
+            console.error('AI Processing Error:', error);
+            // Attempt to recover AI state
+            resetAISystem();
+        }
+    }
+
+    function isValidUpgrade(type) {
+        // Prevent AI from buying itself or Hyper AI if already owned
+        if (type === 'ai' && upgrades.some(u => u.type === 'ai')) return false;
+        if (type === 'hyper-ai' && hyperAIActive) return false;
+        return true;
+    }
+
+    function resetAISystem() {
+        if (aiAssistantInterval) {
+            clearInterval(aiAssistantInterval);
+        }
+        aiAssistantActive = false;
+        hyperAIActive = false;
+        
+        // Attempt to restore AI if enabled
+        if (aiEnabled) {
+            if (upgrades.some(u => u.type === 'hyper-ai')) {
+                setTimeout(activateHyperAI, 1000);
+            } else if (upgrades.some(u => u.type === 'ai')) {
+                setTimeout(activateAIAssistant, 1000);
+            }
+        }
+    }
+
+    // Enhance AI state management
+    function saveAIState() {
+        const aiState = {
+            enabled: aiEnabled,
+            active: aiAssistantActive,
+            hyperActive: hyperAIActive,
+            spendingLimit: aiSpendingLimit,
+            priority: aiPriority,
+            lastInterval: calculateAIInterval(hyperAIActive)
+        };
+        localStorage.setItem('aiState', JSON.stringify(aiState));
+    }
+
+    // Modify loadGame function to include enhanced AI state loading
+    function loadGame() {
+        // ...existing loadGame code...
+
+        try {
+            const aiState = JSON.parse(localStorage.getItem('aiState'));
+            if (aiState) {
+                aiEnabled = aiState.enabled;
+                aiSpendingLimit = aiState.spendingLimit;
+                aiPriority = aiState.priority;
+                
+                // Delay AI activation to ensure DOM is ready
+                if (aiEnabled) {
+                    setTimeout(() => {
+                        if (hyperAIActive) {
+                            activateHyperAI();
+                        } else if (upgrades.some(u => u.type === 'ai')) {
+                            activateAIAssistant();
+                        }
+                    }, 1000);
+                }
+            }
+        } catch (error) {
+            console.error('AI State Load Error:', error);
+            resetAISystem();
+        }
+    }
+
+    // Add window visibility handling to pause AI when tab is inactive
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+        } else if (aiEnabled) {
+            if (hyperAIActive) {
+                activateHyperAI();
+            } else if (aiAssistantActive) {
+                activateAIAssistant();
+            }
+        }
+    });
   </script>
 </body>
 
