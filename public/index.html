@@ -1012,7 +1012,6 @@
     };
 
     function setZIndex(element, zIndex) {
-      element.style.zIndex = zIndex;
     }
 
     function wait(ms) {
@@ -1200,7 +1199,7 @@
         updateMultipliers();
         updateStorePrices();
         renderUpgrades();
-        updateDisplay(true); // Force immediate update
+        updateDisplay();
         saveGame();
 
         showNotification(`${capitalize(type)} upgrade purchased!`);
@@ -1462,28 +1461,31 @@
 
     // Main game loop
     function gameLoop() {
-      const now = Date.now();
-        
-      // Calculate auto-clicker value
       const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
       let autoClickerValue = autoClickerUpgrades.reduce((sum, u) => sum + u.value, 0);
-      
+
       autoClickerValue = applyMultiplier(autoClickerValue);
-      if (upgrades.some(u => u.type === 'datacenter')) autoClickerValue *= 6;
-      if (turboActive) autoClickerValue *= 1.5;
-      
-      // Apply value and update display
+
+      if (upgrades.some(u => u.type === 'datacenter')) {
+        autoClickerValue *= 6;
+      }
+
+      if (turboActive) {
+        autoClickerValue *= 1.5;
+      }
+
       if (autoClickerValue > 0) {
-          score += autoClickerValue;
-          updateScoreDisplay();
-          
-          // Save periodically
-          if (now - lastSaveTime >= UPDATE_CONFIG.saveInterval) {
-              saveGame();
-              lastSaveTime = now;
-          }
-          
-          checkCompletion();
+        score += autoClickerValue;
+        // Update score display without full re-render
+        scoreDisplay.textContent = score.toFixed(0);
+        checkCompletion();
+        saveGame();
+        
+        // Only do full render every second
+        if (Date.now() - lastRenderTime > 1000) {
+          debouncedRenderUpgrades();
+          lastRenderTime = Date.now();
+        }
       }
     }
 
@@ -1528,14 +1530,9 @@
     }
 
     // Update display
-    function updateDisplay(forceUpdate = false) {
-        updateScoreDisplay(); // Always update score
-        
-        const now = Date.now();
-        if (forceUpdate || now - lastRenderTime >= UPDATE_CONFIG.renderInterval) {
-            debouncedRenderUpgrades();
-            lastRenderTime = now;
-        }
+    function updateDisplay() {
+      scoreDisplay.textContent = score.toFixed(0);
+      debouncedRenderUpgrades();
     }
 
     // Create debounced version of renderUpgrades
@@ -1787,31 +1784,29 @@
     }
 
     function processAIAction() {
-        if (!aiEnabled || score <= 0) return;
-        
         try {
-            requestIdleCallback(() => {
-                const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
-                    .filter(item => {
-                        const type = item.dataset.type;
-                        const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
-                        return score >= cost && 
-                               cost <= aiSpendingLimit && 
-                               isValidUpgrade(type);
-                    })
-                    .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
-
-                if (affordableUpgrades.length > 0) {
-                    const bestUpgrade = affordableUpgrades[0];
-                    requestAnimationFrame(() => {
-                        buyUpgrade(bestUpgrade.dataset.type, 
-                                 parseInt(bestUpgrade.dataset.cost));
-                    });
-                }
-            }, { timeout: 100 }); // Ensure it runs within 100ms
+            if (!aiEnabled || score <= 0) return;
             
+            const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
+                .filter(item => {
+                    const type = item.dataset.type;
+                    const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
+                    return score >= cost && 
+                           cost <= aiSpendingLimit && 
+                           isValidUpgrade(type);
+                })
+                .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
+
+            if (affordableUpgrades.length > 0) {
+                const bestUpgrade = affordableUpgrades[0];
+                requestAnimationFrame(() => {
+                    buyUpgrade(bestUpgrade.dataset.type, 
+                             parseInt(bestUpgrade.dataset.cost));
+                });
+            }
         } catch (error) {
             console.error('AI Processing Error:', error);
+            // Attempt to recover AI state
             resetAISystem();
         }
     }
@@ -1856,6 +1851,7 @@
     // Modify loadGame function to include enhanced AI state loading
     function loadGame() {
         // ...existing loadGame code...
+        JSON.parse(localStorage.getItem('aiState'));
 
         try {
             const aiState = JSON.parse(localStorage.getItem('aiState'));
@@ -1895,166 +1891,7 @@
             }
         }
     });
-
-    // Add these near other game variables
-    const UPDATE_CONFIG = {
-        displayInterval: 100,    // Update display values every 100ms
-        aiInterval: 750,        // Minimum AI action interval
-        saveInterval: 5000,     // Save game every 5 seconds
-        renderInterval: 1000    // Full render every second
-    };
-
-    let lastDisplayUpdate = 0;
-    let lastSaveTime = 0;
-    
-    // Add this function for frequent display updates
-    function updateScoreDisplay() {
-        const now = Date.now();
-        if (now - lastDisplayUpdate >= UPDATE_CONFIG.displayInterval) {
-            scoreDisplay.textContent = Math.floor(score).toLocaleString();
-            lastDisplayUpdate = now;
-            
-            // Update AI spending limit display if needed
-            const aiSlider = document.querySelector('.ai-slider');
-            if (aiSlider) {
-                aiSlider.value = aiSpendingLimit === Infinity ? 100 : (aiSpendingLimit / 1000);
-            }
-        }
-    }
-
-    // Add continuous display update loop
-    function startDisplayLoop() {
-        function updateLoop() {
-            updateScoreDisplay();
-            requestAnimationFrame(updateLoop);
-        }
-        updateLoop();
-    }
-
-    // Modify window.onload to start display loop
-    window.onload = function() {
-        // ...existing onload code...
-        startDisplayLoop();
-        loadGame();
-    }
-
-    // Modify updateDisplay function
-    function updateDisplay(forceUpdate = false) {
-        updateScoreDisplay(); // Always update score
-        
-        const now = Date.now();
-        if (forceUpdate || now - lastRenderTime >= UPDATE_CONFIG.renderInterval) {
-            debouncedRenderUpgrades();
-            lastRenderTime = now;
-        }
-    }
-
-    // Modify gameLoop
-    function gameLoop() {
-        const now = Date.now();
-        
-        // Calculate auto-clicker value
-        const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
-        let autoClickerValue = autoClickerUpgrades.reduce((sum, u) => sum + u.value, 0);
-        
-        autoClickerValue = applyMultiplier(autoClickerValue);
-        if (upgrades.some(u => u.type === 'datacenter')) autoClickerValue *= 6;
-        if (turboActive) autoClickerValue *= 1.5;
-        
-        // Apply value and update display
-        if (autoClickerValue > 0) {
-            score += autoClickerValue;
-            updateScoreDisplay();
-            
-            // Save periodically
-            if (now - lastSaveTime >= UPDATE_CONFIG.saveInterval) {
-                saveGame();
-                lastSaveTime = now;
-            }
-            
-            checkCompletion();
-        }
-    }
-
-    // Modify AI helper functions
-    function processAIAction() {
-        if (!aiEnabled || score <= 0) return;
-        
-        try {
-            requestIdleCallback(() => {
-                const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
-                    .filter(item => {
-                        const type = item.dataset.type;
-                        const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
-                        return score >= cost && 
-                               cost <= aiSpendingLimit && 
-                               isValidUpgrade(type);
-                    })
-                    .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
-
-                if (affordableUpgrades.length > 0) {
-                    const bestUpgrade = affordableUpgrades[0];
-                    requestAnimationFrame(() => {
-                        buyUpgrade(bestUpgrade.dataset.type, 
-                                 parseInt(bestUpgrade.dataset.cost));
-                    });
-                }
-            }, { timeout: 100 }); // Ensure it runs within 100ms
-            
-        } catch (error) {
-            console.error('AI Processing Error:', error);
-            resetAISystem();
-        }
-    }
-
-    // Modify renderUpgrades to be more efficient
-    const renderUpgrades = (() => {
-        let renderPromise = null;
-        
-        return () => {
-            if (renderPromise) return renderPromise;
-            
-            renderPromise = new Promise(resolve => {
-                requestAnimationFrame(() => {
-                    // ...existing renderUpgrades code...
-                    
-                    renderPromise = null;
-                    resolve();
-                });
-            });
-            
-            return renderPromise;
-        };
-    })();
-
-    // Add these to improve performance
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            // Slow down updates when tab is hidden
-            UPDATE_CONFIG.displayInterval = 1000;
-            UPDATE_CONFIG.renderInterval = 2000;
-        } else {
-            // Resume normal update frequency
-            UPDATE_CONFIG.displayInterval = 100;
-            UPDATE_CONFIG.renderInterval = 1000;
-            updateDisplay(true); // Force immediate update
-        }
-    });
-
-    // Modify buy upgrade to ensure immediate display updates
-    function buyUpgrade(type, baseCost) {
-        const currentCost = calculateCurrentCost(type, baseCost);
-        if (score >= currentCost) {
-            score -= currentCost;
-            // ...existing buyUpgrade code...
-            
-            updateDisplay(true); // Force immediate update
-            saveGame();
-        }
-    }
   </script>
 </body>
 
 </html>
-```
-</copilot-edited-file>
