@@ -8,7 +8,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Handle POST requests (example)
 app.post('/api/data', (req, res) => {
-  // Handle your post request logic here
   res.send('Data received');
 });
 

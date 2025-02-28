@@ -329,10 +329,29 @@
       transition: opacity 0.5s, transform 1.5s;
       font-size: 1.45em;
       z-index: 1000;
+      border: 2px solid darkred;
+      border-radius: 8.75px;
+      background: rgb(250, 128, 114);
+      padding-inline-end: 40px;
+      padding: 20px;
     }
 
     .error-message.show {
-      opacity: 1;
+      opacity: 0.985;
+      background: rgba(250, 128, 114, 0.75);
+    }
+
+    .error-icon {
+      position: absolute;
+      top: 50%;
+      left: -75px;
+      transform: translateY(-50%);
+      font-size: 1.5em;
+      border: 2px solid darkred;
+      border-radius: 1cm;
+      padding: 10px 25px;
+      color: darkred;
+      background: rgba(255, 51, 5, 0.65);
     }
 
     @keyframes flyAcross {
@@ -1774,6 +1793,10 @@
       const errorMsg = document.createElement('div');
       errorMsg.className = 'error-message';
       errorMsg.textContent = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+      errorMsg.innerHTML = `
+        <div class="error-icon">!</div>
+        <div class="error-text">${errorMsg.textContent}</div>
+      `;
 
       const randomX = Math.random() * 80 - 75; // Ensure messages appear between 10% and 90% of the viewport width
       const randomY = Math.random() * 80 - 75; // Ensure messages appear between 10% and 90% of the viewport height
