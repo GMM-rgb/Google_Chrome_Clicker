@@ -36,6 +36,7 @@
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
       margin: 0;
       user-select: none;
+      text-align: center;
       -webkit-user-select: none;
       -webkit-user-drag: none;
     }
@@ -295,6 +296,10 @@
       background: rgba(255, 255, 255, 0.9);
       padding: 10px;
       border-radius: 8px;
+      width: 100%;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 4;
+      /* Ensure score display is above other elements */
     }
 
     /* Notification styles */
@@ -699,10 +704,179 @@
       background: #1a1a2e;
       color: #4d4dff;
     }
+
+    /* Hide main content initially */
+    .header, .main-container, .click-area {
+      display: none;
+    }
+
+    /* Cutscene styles */
+    .cutscene {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chrome-icon {
+      width: 150px;
+      height: 150px;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 1s ease;
+    }
+
+    .chrome-icon.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .loading-bar-container {
+      width: 300px;
+      height: 20px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      margin-top: 30px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading-bar {
+      width: 0%;
+      height: 100%;
+      background: #4285f4;
+      transition: width 3s ease-in-out;
+    }
+
+    .loading-bar.error {
+      background: #ff0000;
+    }
+
+    .error-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f0f0f0;
+      border: 1px solid #999;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 10000;
+    }
+
+    .error-box .title-bar {
+      background: #0055e5;
+      color: white;
+      padding: 5px;
+      margin: -20px -20px 20px -20px;
+    }
+
+    .black-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      display: none;
+    }
+
+    .reboot-text {
+      color: white;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 9999;
+    }
+
+    .start-button {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 15px 30px;
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+      z-index: 10000;
+    }
+
+    .skip-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      padding: 10px 20px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 10000;
+      display: none;
+    }
+
+    .console-interface {
+      color: white;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 9999;
+      white-space: pre-wrap;
+      text-align: left;
+      background-color: black;
+      padding: 20px;
+      border: 2px solid #00ff00;
+      border-radius: 10px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Add cutscene elements before existing content -->
+  <div class="cutscene">
+    <img src="https://assets.onecompiler.app/42w3zjd8h/43a9shgmn/google_chrome_logo_comic.png" alt="Chrome Logo" class="chrome-icon">
+    <div class="loading-bar-container">
+      <div class="loading-bar"></div>
+    </div>
+    <button class="skip-button">Skip Intro</button>
+  </div>
+
+  <div class="error-box">
+    <div class="title-bar">Google Chrome</div>
+    <p>Google Chrome is not responding...</p>
+    <p>Would you like to terminate the process?</p>
+  </div>
+
+  <div class="black-screen"></div>
+  <div class="console-interface"></div>
+  <button class="start-button">Launch Chrome</button>
+
   <div class="header">
     <h1 class="page-title">Chrome Clicker</h1>
     <div class="score-display">
@@ -866,6 +1040,114 @@
   </div>
 
   <script>
+    // Add cutscene logic at the start of your script
+    window.addEventListener('load', () => {
+      const cutscene = document.querySelector('.cutscene');
+      const chromeIcon = document.querySelector('.chrome-icon');
+      const loadingBarContainer = document.querySelector('.loading-bar-container');
+      const loadingBar = document.querySelector('.loading-bar');
+      const errorBox = document.querySelector('.error-box');
+      const blackScreen = document.querySelector('.black-screen');
+      const consoleInterface = document.querySelector('.console-interface');
+      const startButton = document.querySelector('.start-button');
+      const skipButton = document.querySelector('.skip-button');
+      const mainContent = document.querySelectorAll('.header, .main-container, .click-area');
+      let scoreDisplay = document.getElementById('score');
+
+      async function playCutscene() {
+        // Show Chrome icon
+        chromeIcon.classList.add('show');
+        await wait(1000);
+
+        // Show and animate loading bar
+        loadingBarContainer.style.opacity = '1';
+        await wait(500);
+        loadingBar.style.width = '100%';
+        await wait(3000);
+
+        // Show error state
+        loadingBar.classList.add('error');
+        await wait(1000);
+
+        // Show error dialog
+        errorBox.style.display = 'block';
+        await wait(2000);
+
+        // Show critical error
+        errorBox.innerHTML = `
+          <div class="title-bar">Critical Error</div>
+          <p>A critical error has occurred.</p>
+          <p>Your system will now restart.</p>
+        `;
+        await wait(2000);
+
+        // Simulate shutdown
+        blackScreen.style.display = 'block';
+        await wait(100);
+        blackScreen.style.opacity = '1';
+        errorBox.style.display = 'none';
+        await wait(1000);
+
+        // Show console interface
+        consoleInterface.style.display = 'block';
+        const consoleLines = [
+          'Starting Windows XP Recovery Console...',
+          'Checking file system on C:',
+          'The type of the file system is NTFS.',
+          'Volume label is System.',
+          'CHKDSK is verifying files (stage 1 of 3)...',
+          'File verification completed.',
+          'CHKDSK is verifying indexes (stage 2 of 3)...',
+          'Index verification completed.',
+          'CHKDSK is verifying security descriptors (stage 3 of 3)...',
+          'Security descriptor verification completed.',
+          'Repairing corrupted files...',
+          'Repair failed.',
+          'Please click to initialize emergency recovery.'
+        ];
+
+        for (const line of consoleLines) {
+          consoleInterface.textContent += line + '\n';
+          await wait(1000);
+        }
+
+        // Show start button
+        await wait(1000);
+        consoleInterface.style.display = 'none';
+        startButton.style.display = 'block';
+
+        // Add click handler for start button
+        startButton.addEventListener('click', () => {
+          blackScreen.style.opacity = '0';
+          setTimeout(() => {
+            cutscene.style.display = 'none';
+            blackScreen.style.display = 'none';
+            startButton.style.display = 'none';
+            // Show main game content
+            mainContent.forEach(el => el.style.display = 'block');
+            updateDisplay(); // Ensure score is updated
+          }, 500);
+        });
+      }
+
+      // Skip button functionality
+      skipButton.addEventListener('click', () => {
+        cutscene.style.display = 'none';
+        blackScreen.style.display = 'none';
+        startButton.style.display = 'none';
+        mainContent.forEach(el => el.style.display = 'flex');
+        updateDisplay(); // Ensure score is updated
+      });
+
+      // Show skip button after a delay
+      setTimeout(() => {
+        skipButton.style.display = 'block';
+      }, 3000);
+
+      // Start the cutscene
+      playCutscene();
+    });
+
     // Game variables
     let score = parseInt(localStorage.getItem('score')) || 0;
     let upgrades = JSON.parse(localStorage.getItem('upgrades')) || [];
