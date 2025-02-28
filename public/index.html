@@ -1016,7 +1016,25 @@
       startDisplayLoop();
       loadGame();
       updateGameLoopInterval();
+      initializeCPU(); // Initialize CPU on window load
     };
+
+    // Add this function to initialize the CPU module
+    function initializeCPU() {
+      if (modularCpuInstalled) {
+        renderUpgrades();
+      }
+    }
+
+    // Ensure CPU module is created on first interaction
+    document.body.addEventListener('click', () => {
+      if (!modularCpuInstalled) {
+        modularCpuInstalled = true;
+        cpuUnlocked = true;
+        renderUpgrades();
+        saveGame();
+      }
+    }, { once: true });
 
     function setZIndex(element, zIndex) {
     }
