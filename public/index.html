@@ -836,6 +836,7 @@
     let aiEnabled = true;
     // Added new global flag for Modular CPU
     let modularCpuInstalled = false;
+    let gameLoopInterval;
 
     // Error messages for clicking
     const errorMessages = [
@@ -1014,6 +1015,7 @@
       attachEventListeners();
       startDisplayLoop();
       loadGame();
+      updateGameLoopInterval();
     };
 
     function setZIndex(element, zIndex) {
@@ -1427,43 +1429,36 @@
 
     // Activate AI Assistant
     function activateAIAssistant() {
-        if (!aiAssistantActive && aiEnabled) {
+        if (aiEnabled) {
             aiAssistantActive = true;
             if (aiAssistantInterval) {
                 clearInterval(aiAssistantInterval);
             }
             
             const interval = calculateAIInterval(false);
-            console.log('AI Assistant Interval:', interval);
-            
-            aiAssistantInterval = setInterval(() => {
-                if (!aiEnabled) return;
-                processAIAction();
-            }, interval);
+            aiAssistantInterval = setInterval(processAIAction, interval);
             
             showNotification("AI Assistant activated!");
             saveAIState();
+            renderUpgrades();
         }
     }
 
     // Add Hyper AI activation function
     function activateHyperAI() {
-        if (!hyperAIActive && aiEnabled) {
+        if (aiEnabled) {
             hyperAIActive = true;
+            aiAssistantActive = true;
             if (aiAssistantInterval) {
                 clearInterval(aiAssistantInterval);
             }
             
             const interval = calculateAIInterval(true);
-            console.log('Hyper AI Interval:', interval);
-            
-            aiAssistantInterval = setInterval(() => {
-                if (!aiEnabled) return;
-                processAIAction();
-            }, interval);
+            aiAssistantInterval = setInterval(processAIAction, interval);
             
             showNotification('Hyper AI activated!');
             saveAIState();
+            renderUpgrades();
         }
     }
 
@@ -1490,32 +1485,35 @@
 
     // Main game loop
     function gameLoop() {
-      const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
-      let autoClickerValue = autoClickerUpgrades.reduce((sum, u) => sum + u.value, 0);
+      try {
+        const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
+        let autoClickerValue = autoClickerUpgrades.reduce((sum, u) => sum + u.value, 0);
 
-      autoClickerValue = applyMultiplier(autoClickerValue);
+        autoClickerValue = applyMultiplier(autoClickerValue);
 
-      if (upgrades.some(u => u.type === 'datacenter')) {
-        autoClickerValue *= 6;
-      }
-
-      if (turboActive) {
-        autoClickerValue *= 1.5;
-      }
-
-      if (autoClickerValue > 0) {
-        score += autoClickerValue;
-        // Update score display without full re-render
-        scoreDisplay.textContent = score.toFixed(0);
-        checkCompletion();
-        saveGame();
-        
-        // Only do full render every second
-        if (Date.now() - lastRenderTime > 1000) {
-          debouncedRenderUpgrades();
-          lastRenderTime = Date.now();
+        if (upgrades.some(u => u.type === 'datacenter')) {
+            autoClickerValue *= 6;
         }
-      }
+
+        if (turboActive) {
+            autoClickerValue *= 1.5;
+        }
+
+        if (autoClickerValue > 0) {
+            score += autoClickerValue;
+            scoreDisplay.textContent = Math.floor(score).toLocaleString();
+            
+            // Only trigger full UI update occasionally
+            const now = Date.now();
+            if (now - lastUIUpdate > 1000) {
+                updateDisplay();
+                saveGame();
+                checkCompletion();
+            }
+        }
+    } catch (error) {
+        console.error('Game loop error:', error);
+    }
     }
 
     // Add this with other game variables
@@ -1528,26 +1526,41 @@
 
     // Load game
     function loadGame() {
+      score = parseInt(localStorage.getItem('score')) || 0;
+      upgrades = JSON.parse(localStorage.getItem('upgrades')) || [];
+      
+      // Load CPU state
+      modularCpuInstalled = localStorage.getItem('modularCpuInstalled') === 'true';
+      cpuUnlocked = modularCpuInstalled || localStorage.getItem('cpuUnlocked') === 'true';
+      
+      // Load AI state
+      try {
+          const aiState = JSON.parse(localStorage.getItem('aiState'));
+          if (aiState) {
+              aiEnabled = aiState.enabled;
+              aiSpendingLimit = aiState.spendingLimit || Infinity;
+              aiPriority = aiState.priority || 'expensive';
+              hyperAIActive = aiState.hyperActive || false;
+              aiAssistantActive = aiState.active || false;
+          }
+      } catch (error) {
+          console.error('AI State Load Error:', error);
+          resetAISystem();
+      }
+
+      // Initialize display
       updateDisplay();
       renderUpgrades();
       updateStorePrices();
       checkCompletion();
 
-      cpuUnlocked = localStorage.getItem('cpuUnlocked') === 'true';
-      hyperAIActive = localStorage.getItem('hyperAIActive') === 'true';
-      modularCpuInstalled = localStorage.getItem('modularCpuInstalled') === 'true';
-      
-      if (hyperAIActive) {
-        activateHyperAI();
-      } else if (upgrades.some(u => u.type === 'ai')) {
-        activateAIAssistant();
-      }
-
-      const aiPrefs = JSON.parse(localStorage.getItem('aiPreferences'));
-      if (aiPrefs) {
-        aiEnabled = aiPrefs.enabled;
-        aiSpendingLimit = aiPrefs.spendingLimit;
-        aiPriority = aiPrefs.priority;
+      // Start AI if enabled
+      if (aiEnabled && (upgrades.some(u => u.type === 'ai' || u.type === 'hyper-ai'))) {
+          if (hyperAIActive) {
+              setTimeout(activateHyperAI, 100);
+          } else {
+              setTimeout(activateAIAssistant, 100);
+          }
       }
     }
 
@@ -1555,9 +1568,153 @@
     function saveGame() {
       localStorage.setItem('score', score);
       localStorage.setItem('upgrades', JSON.stringify(upgrades));
-      localStorage.setItem('cpuUnlocked', cpuUnlocked);
-      localStorage.setItem('hyperAIActive', hyperAIActive);
       localStorage.setItem('modularCpuInstalled', modularCpuInstalled);
+      localStorage.setItem('cpuUnlocked', cpuUnlocked);
+      
+      // Save AI state
+      saveAIState();
+    }
+
+    // Add these variables at the top with other game variables
+    let isUpdating = false;
+    let uiUpdateQueued = false;
+    let lastUIUpdate = 0;
+    const UI_UPDATE_THROTTLE = 100; // Minimum ms between UI updates
+
+    // Replace the updateDisplay function
+    function updateDisplay() {
+        if (isUpdating) {
+            uiUpdateQueued = true;
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastUIUpdate < UI_UPDATE_THROTTLE) {
+            if (!uiUpdateQueued) {
+                uiUpdateQueued = true;
+                setTimeout(updateDisplay, UI_UPDATE_THROTTLE);
+            }
+            return;
+        }
+
+        isUpdating = true;
+        lastUIUpdate = now;
+        uiUpdateQueued = false;
+
+        try {
+            scoreDisplay.textContent = Math.floor(score).toLocaleString();
+            requestAnimationFrame(() => {
+                renderUpgrades();
+                isUpdating = false;
+                if (uiUpdateQueued) {
+                    updateDisplay();
+                }
+            });
+        } catch (error) {
+            console.error('Update display error:', error);
+            isUpdating = false;
+        }
+    }
+
+    // Replace the gameLoop function
+    function gameLoop() {
+        try {
+            const autoClickerUpgrades = upgrades.filter(u => u.type === 'auto');
+            let autoClickerValue = autoClickerUpgrades.reduce((sum, u) => sum + u.value, 0);
+
+            autoClickerValue = applyMultiplier(autoClickerValue);
+
+            if (upgrades.some(u => u.type === 'datacenter')) {
+                autoClickerValue *= 6;
+            }
+
+            if (turboActive) {
+                autoClickerValue *= 1.5;
+            }
+
+            if (autoClickerValue > 0) {
+                score += autoClickerValue;
+                scoreDisplay.textContent = Math.floor(score).toLocaleString();
+                
+                // Only trigger full UI update occasionally
+                const now = Date.now();
+                if (now - lastUIUpdate > 1000) {
+                    updateDisplay();
+                    saveGame();
+                    checkCompletion();
+                }
+            }
+        } catch (error) {
+            console.error('Game loop error:', error);
+        }
+    }
+
+    // Update processAIAction function
+    function processAIAction() {
+        if (!aiEnabled || score <= 0 || isUpdating) return;
+        
+        try {
+            const storeItems = document.querySelectorAll('.store-item');
+            const affordableUpgrades = Array.from(storeItems)
+                .filter(item => {
+                    const type = item.dataset.type;
+                    const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
+                    return score >= cost && 
+                           cost <= aiSpendingLimit && 
+                           isValidUpgrade(type);
+                })
+                .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
+
+            if (affordableUpgrades.length > 0) {
+                const bestUpgrade = affordableUpgrades[0];
+                const type = bestUpgrade.dataset.type;
+                const cost = parseInt(bestUpgrade.dataset.cost);
+                
+                // Use setTimeout to prevent UI blocking
+                setTimeout(() => {
+                    if (!isUpdating) {
+                        buyUpgrade(type, cost);
+                    }
+                }, 0);
+            }
+        } catch (error) {
+            console.error('AI Processing Error:', error);
+            resetAISystem();
+        }
+    }
+
+    // Update the activateAIAssistant and activateHyperAI functions
+    function activateAIAssistant() {
+        if (aiEnabled && !isUpdating) {
+            aiAssistantActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = Math.max(calculateAIInterval(false), UI_UPDATE_THROTTLE);
+            aiAssistantInterval = setInterval(processAIAction, interval);
+            
+            showNotification("AI Assistant activated!");
+            saveAIState();
+            requestAnimationFrame(renderUpgrades);
+        }
+    }
+
+    function activateHyperAI() {
+        if (aiEnabled && !isUpdating) {
+            hyperAIActive = true;
+            aiAssistantActive = true;
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+            }
+            
+            const interval = Math.max(calculateAIInterval(true), UI_UPDATE_THROTTLE);
+            aiAssistantInterval = setInterval(processAIAction, interval);
+            
+            showNotification('Hyper AI activated!');
+            saveAIState();
+            requestAnimationFrame(renderUpgrades);
+        }
     }
 
     // Update display
@@ -1648,75 +1805,84 @@
 
     // AI Control Functions
     function toggleAI() {
-      aiEnabled = !aiEnabled;
-      if (aiEnabled) {
-          if (hyperAIActive) {
-              activateHyperAI();
-          } else {
-              activateAIAssistant();
-          }
-          showNotification('AI Assistant activated');
-      } else {
-          clearInterval(aiAssistantInterval);
-          showNotification('AI Assistant deactivated');
-      }
-      renderUpgrades();
-      saveAIPreferences();
+        aiEnabled = !aiEnabled;
+        if (aiEnabled) {
+            if (hyperAIActive) {
+                activateHyperAI();
+            } else {
+                activateAIAssistant();
+            }
+        } else {
+            if (aiAssistantInterval) {
+                clearInterval(aiAssistantInterval);
+                aiAssistantInterval = null;
+            }
+            aiAssistantActive = false;
+        }
+        saveAIState();
+        renderUpgrades();
+        showNotification(aiEnabled ? 'AI Assistant activated' : 'AI Assistant deactivated');
     }
 
     function updateSpendingLimit(value) {
-      aiSpendingLimit = value < 100 ? value * 1000 : Infinity;
-      showNotification(`AI spending limit set to ${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}`);
-      saveAIPreferences();
+        aiSpendingLimit = value < 100 ? value * 1000 : Infinity;
+        showNotification(`AI spending limit set to ${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}`);
+        saveAIState();
+        renderUpgrades();
     }
 
     function updateAIPriority(value) {
-      aiPriority = value;
-      showNotification(`AI priority set to ${value}`);
-      saveAIPreferences();
+        aiPriority = value;
+        showNotification(`AI priority set to ${value}`);
+        saveAIState();
+        renderUpgrades();
     }
 
     function resetAIPreferences() {
-      aiSpendingLimit = Infinity;
-      aiPriority = 'expensive';
-      showNotification('AI preferences reset to default');
-      renderUpgrades();
-      saveAIPreferences();
+        aiSpendingLimit = Infinity;
+        aiPriority = 'expensive';
+        showNotification('AI preferences reset to default');
+        saveAIState();
+        renderUpgrades();
     }
 
-    function saveAIPreferences() {
-      localStorage.setItem('aiPreferences', JSON.stringify({
-        enabled: aiEnabled,
-        spendingLimit: aiSpendingLimit,
-        priority: aiPriority
-      }));
+    function saveAIState() {
+        const aiState = {
+            enabled: aiEnabled,
+            active: aiAssistantActive,
+            hyperActive: hyperAIActive,
+            spendingLimit: aiSpendingLimit,
+            priority: aiPriority,
+            lastInterval: calculateAIInterval(hyperAIActive)
+        };
+        localStorage.setItem('aiState', JSON.stringify(aiState));
     }
 
     // Modify activateHyperAI and activateAIAssistant to respect preferences
     function getUpgradePriority(upgrade) {
-      const type = upgrade.dataset.type;
-      const cost = calculateCurrentCost(type, parseInt(upgrade.dataset.cost));
-      
-      switch(aiPriority) {
-        case 'efficient':
-          return cost / calculateUpgradeValue(type);
-        case 'basic':
-          return type === 'basic' ? -1 : 1;
-        case 'auto':
-          return type === 'auto' ? -1 : 1;
-        default: // expensive
-          return -cost;
-      }
+        const type = upgrade.dataset.type;
+        const cost = calculateCurrentCost(type, parseInt(upgrade.dataset.cost));
+        
+        switch(aiPriority) {
+          case 'efficient':
+            return cost / calculateUpgradeValue(type);
+          case 'basic':
+            return type === 'basic' ? -1 : 1;
+          case 'auto':
+            return type === 'auto' ? -1 : 1;
+          default: // expensive
+            return -cost;
+        }
     }
 
     function calculateUpgradeValue(type) {
-      // Simple value calculation - can be expanded
-      switch(type) {
-        case 'basic': return 1;
-        case 'multiplier': return 5;
-        case 'auto': return 10;
-        default: return 1;
-      }
+        // Simple value calculation - can be expanded
+        switch(type) {
+          case 'basic': return 1;
+          case 'multiplier': return 5;
+          case 'auto': return 10;
+          default: return 1;
+        }
     }
 
     // Modify the upgrade filtering in AI functions to use preferences
@@ -1724,7 +1890,9 @@
       .filter(item => {
         const type = item.dataset.type;
         const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
-        return score >= cost && cost <= aiSpendingLimit;
+        return score >= cost && 
+               cost <= aiSpendingLimit && 
+               isValidUpgrade(type);
       })
       .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
 
@@ -1755,43 +1923,36 @@
 
     // Modify AI Assistant activation
     function activateAIAssistant() {
-        if (!aiAssistantActive && aiEnabled) {
+        if (aiEnabled) {
             aiAssistantActive = true;
             if (aiAssistantInterval) {
                 clearInterval(aiAssistantInterval);
             }
             
             const interval = calculateAIInterval(false);
-            console.log('AI Assistant Interval:', interval);
-            
-            aiAssistantInterval = setInterval(() => {
-                if (!aiEnabled) return;
-                processAIAction();
-            }, interval);
+            aiAssistantInterval = setInterval(processAIAction, interval);
             
             showNotification("AI Assistant activated!");
             saveAIState();
+            renderUpgrades();
         }
     }
 
     // Modify Hyper AI activation
     function activateHyperAI() {
-        if (!hyperAIActive && aiEnabled) {
+        if (aiEnabled) {
             hyperAIActive = true;
+            aiAssistantActive = true;
             if (aiAssistantInterval) {
                 clearInterval(aiAssistantInterval);
             }
             
             const interval = calculateAIInterval(true);
-            console.log('Hyper AI Interval:', interval);
-            
-            aiAssistantInterval = setInterval(() => {
-                if (!aiEnabled) return;
-                processAIAction();
-            }, interval);
+            aiAssistantInterval = setInterval(processAIAction, interval);
             
             showNotification('Hyper AI activated!');
             saveAIState();
+            renderUpgrades();
         }
     }
 
@@ -1881,7 +2042,10 @@
 
     // Modify loadGame function to include enhanced AI state loading
     function loadGame() {
-        // ...existing loadGame code...
+        score = parseInt(localStorage.getItem('score')) || 0;
+        upgrades = JSON.parse(localStorage.getItem('upgrades')) || [];
+        modularCpuInstalled = localStorage.getItem('modularCpuInstalled') === 'true';
+        cpuUnlocked = modularCpuInstalled || localStorage.getItem('cpuUnlocked') === 'true';
         JSON.parse(localStorage.getItem('aiState'));
 
         try {
