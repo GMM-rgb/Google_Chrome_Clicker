@@ -527,6 +527,128 @@
       background: rgba(0, 255, 255, 0.4);
       transform: translateY(-2px);
     }
+
+    /* AI Control Card Styles */
+    .ai-card {
+      background: #1a1a2e;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px 0;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid #4d4dff;
+      box-shadow: 0 0 20px rgba(77, 77, 255, 0.3);
+    }
+
+    .ai-circuits {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        linear-gradient(45deg, transparent 45%, rgba(77, 77, 255, 0.1) 45%, rgba(77, 77, 255, 0.1) 55%, transparent 55%),
+        linear-gradient(-45deg, transparent 45%, rgba(77, 77, 255, 0.1) 45%, rgba(77, 77, 255, 0.1) 55%, transparent 55%);
+      background-size: 30px 30px;
+      animation: aiCircuitFlow 3s linear infinite;
+    }
+
+    .ai-data-stream {
+      position: absolute;
+      width: 2px;
+      height: 10px;
+      background: #4d4dff;
+      opacity: 0;
+    }
+
+    @keyframes aiCircuitFlow {
+      from { background-position: 0 0; }
+      to { background-position: 30px 30px; }
+    }
+
+    @keyframes dataStream {
+      0% { 
+        transform: translateY(-100%);
+        opacity: 1;
+      }
+      100% { 
+        transform: translateY(100vh);
+        opacity: 0;
+      }
+    }
+
+    .ai-content {
+      position: relative;
+      z-index: 1;
+      color: #4d4dff;
+    }
+
+    .ai-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .ai-toggle {
+      background: rgba(77, 77, 255, 0.2);
+      border: 1px solid #4d4dff;
+      color: #4d4dff;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .ai-toggle:hover {
+      background: rgba(77, 77, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .ai-toggle.active {
+      background: rgba(77, 77, 255, 0.6);
+      color: white;
+    }
+
+    .ai-slider {
+      width: 100%;
+      margin: 10px 0;
+      -webkit-appearance: none;
+      background: rgba(77, 77, 255, 0.2);
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .ai-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4d4dff;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .ai-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 10px rgba(77, 77, 255, 0.5);
+    }
+
+    .ai-priority {
+      background: rgba(77, 77, 255, 0.1);
+      border: 1px solid #4d4dff;
+      color: #4d4dff;
+      padding: 5px;
+      border-radius: 5px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .ai-priority option {
+      background: #1a1a2e;
+      color: #4d4dff;
+    }
   </style>
 </head>
 
@@ -705,6 +827,9 @@
     const completionThreshold = 1e12; // 1,000,000,000,000 for finish button
     let hyperAIActive = false;
     let cpuUnlocked = false;
+    let aiSpendingLimit = Infinity;
+    let aiPriority = 'expensive';
+    let aiEnabled = true;
 
     // Error messages for clicking
     const errorMessages = [
@@ -1111,6 +1236,49 @@
       workspace.innerHTML = ''; // Clear existing upgrades
       const groupedUpgrades = groupBy(upgrades, 'type');
 
+      // Add AI Control Card if AI Assistant or Hyper AI is owned
+      if (upgrades.some(u => u.type === 'ai' || u.type === 'hyper-ai')) {
+        const aiCard = document.createElement('div');
+        aiCard.className = 'ai-card';
+        
+        const circuits = document.createElement('div');
+        circuits.className = 'ai-circuits';
+        aiCard.appendChild(circuits);
+
+        // Add animated data streams
+        for (let i = 0; i < 10; i++) {
+          const stream = document.createElement('div');
+          stream.className = 'ai-data-stream';
+          stream.style.left = `${Math.random() * 100}%`;
+          stream.style.animation = `dataStream ${2 + Math.random() * 3}s linear infinite ${Math.random() * 2}s`;
+          aiCard.appendChild(stream);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'ai-content';
+        content.innerHTML = `
+          <h3>AI Control Module</h3>
+          <p>Status: ${hyperAIActive ? 'Hyper AI' : 'Standard AI'}</p>
+          <div class="ai-controls">
+            <button class="ai-toggle ${aiEnabled ? 'active' : ''}" onclick="toggleAI()">
+              ${aiEnabled ? 'AI Active' : 'AI Inactive'}
+            </button>
+            <button class="ai-toggle" onclick="resetAIPreferences()">Reset Preferences</button>
+          </div>
+          <p>Spending Limit: $${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}</p>
+          <input type="range" class="ai-slider" min="0" max="100" value="${aiSpendingLimit === Infinity ? 100 : (aiSpendingLimit / 1000)}"
+            onchange="updateSpendingLimit(this.value)">
+          <select class="ai-priority" onchange="updateAIPriority(this.value)">
+            <option value="expensive" ${aiPriority === 'expensive' ? 'selected' : ''}>Priority: Most Expensive</option>
+            <option value="efficient" ${aiPriority === 'efficient' ? 'selected' : ''}>Priority: Most Efficient</option>
+            <option value="basic" ${aiPriority === 'basic' ? 'selected' : ''}>Priority: Basic Upgrades</option>
+            <option value="auto" ${aiPriority === 'auto' ? 'selected' : ''}>Priority: Auto Clickers</option>
+          </select>
+        `;
+        aiCard.appendChild(content);
+        workspace.appendChild(aiCard);
+      }
+
       if (cpuUnlocked) {
         const cpuCard = document.createElement('div');
         cpuCard.className = 'cpu-card';
@@ -1358,6 +1526,13 @@
       } else if (upgrades.some(u => u.type === 'ai')) {
         activateAIAssistant();
       }
+
+      const aiPrefs = JSON.parse(localStorage.getItem('aiPreferences'));
+      if (aiPrefs) {
+        aiEnabled = aiPrefs.enabled;
+        aiSpendingLimit = aiPrefs.spendingLimit;
+        aiPriority = aiPrefs.priority;
+      }
     }
 
     // Save game
@@ -1446,6 +1621,88 @@
         return result;
       }, {});
     }
+
+    // AI Control Functions
+    function toggleAI() {
+      aiEnabled = !aiEnabled;
+      if (aiEnabled) {
+        if (hyperAIActive) {
+          activateHyperAI();
+        } else {
+          activateAIAssistant();
+        }
+        showNotification('AI Assistant activated');
+      } else {
+        clearInterval(aiAssistantInterval);
+        showNotification('AI Assistant deactivated');
+      }
+      renderUpgrades();
+      saveAIPreferences();
+    }
+
+    function updateSpendingLimit(value) {
+      aiSpendingLimit = value < 100 ? value * 1000 : Infinity;
+      showNotification(`AI spending limit set to ${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}`);
+      saveAIPreferences();
+    }
+
+    function updateAIPriority(value) {
+      aiPriority = value;
+      showNotification(`AI priority set to ${value}`);
+      saveAIPreferences();
+    }
+
+    function resetAIPreferences() {
+      aiSpendingLimit = Infinity;
+      aiPriority = 'expensive';
+      showNotification('AI preferences reset to default');
+      renderUpgrades();
+      saveAIPreferences();
+    }
+
+    function saveAIPreferences() {
+      localStorage.setItem('aiPreferences', JSON.stringify({
+        enabled: aiEnabled,
+        spendingLimit: aiSpendingLimit,
+        priority: aiPriority
+      }));
+    }
+
+    // Modify activateHyperAI and activateAIAssistant to respect preferences
+    function getUpgradePriority(upgrade) {
+      const type = upgrade.dataset.type;
+      const cost = calculateCurrentCost(type, parseInt(upgrade.dataset.cost));
+      
+      switch(aiPriority) {
+        case 'efficient':
+          return cost / calculateUpgradeValue(type);
+        case 'basic':
+          return type === 'basic' ? -1 : 1;
+        case 'auto':
+          return type === 'auto' ? -1 : 1;
+        default: // expensive
+          return -cost;
+      }
+    }
+
+    function calculateUpgradeValue(type) {
+      // Simple value calculation - can be expanded
+      switch(type) {
+        case 'basic': return 1;
+        case 'multiplier': return 5;
+        case 'auto': return 10;
+        default: return 1;
+      }
+    }
+
+    // Modify the upgrade filtering in AI functions to use preferences
+    const affordableUpgrades = Array.from(document.querySelectorAll('.store-item'))
+      .filter(item => {
+        const type = item.dataset.type;
+        const cost = calculateCurrentCost(type, parseInt(item.dataset.cost));
+        return score >= cost && cost <= aiSpendingLimit;
+      })
+      .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
   </script>
 </body>
 
