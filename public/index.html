@@ -1725,7 +1725,7 @@
       })
       .sort((a, b) => getUpgradePriority(a) - getUpgradePriority(b));
 
-    // Add these utility functions near the top
+    // Add these utility functions near the top on load
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
