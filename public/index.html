@@ -831,6 +831,8 @@
     let aiSpendingLimit = Infinity;
     let aiPriority = 'expensive';
     let aiEnabled = true;
+    // Added new global flag for Modular CPU
+    let modularCpuInstalled = false;
 
     // Error messages for clicking
     const errorMessages = [
@@ -1185,7 +1187,14 @@
             // Mega click chance handled in handleClick
             break;
           case 'modular-cpu':
+            if (modularCpuInstalled) {
+                showNotification("Modular CPU already installed");
+                return;
+            }
+            modularCpuInstalled = true;
             cpuUnlocked = true;
+            // Set upgrade value to 1 – it will now be merged as a cumulative CPU core value.
+            upgradeValue = 1;
             break;
           case 'hyper-ai':
             activateHyperAI();
@@ -1259,7 +1268,7 @@
         content.className = 'ai-content';
         content.innerHTML = `
           <h3>AI Control Module</h3>
-          <p>Status: ${hyperAIActive ? 'Hyper AI' : 'Standard AI'}</p>
+          <p>Status: ${hyperAIActive ? 'Hyper AI' : (aiEnabled ? 'Standard AI' : 'Inactive')}</p>
           <div class="ai-controls">
             <button class="ai-toggle ${aiEnabled ? 'active' : ''}" onclick="toggleAI()">
               ${aiEnabled ? 'AI Active' : 'AI Inactive'}
@@ -1292,7 +1301,7 @@
         content.className = 'cpu-content';
         content.innerHTML = `
             <h3>CPU Core Control</h3>
-            <p>Current Cores: ${upgrades.filter(u => u.type === 'cpu-core').length}</p>
+            <p>Current Cores: ${upgrades.filter(u => u.type === 'cpu-core').reduce((sum, u) => sum + u.value, 0)}</p>
             <button class="cpu-upgrade-btn" onclick="buyCPUCore()">Add Core ($${calculateCurrentCost('cpu-core', 10000)})</button>
         `;
         cpuCard.appendChild(content);
@@ -1300,6 +1309,22 @@
       }
 
       for (let type in groupedUpgrades) {
+        // For modular-cpu: if installed, render a special card.
+        if (type === 'modular-cpu') {
+            const modCard = document.createElement('div');
+            modCard.className = 'category-group';
+            const header = document.createElement('h3');
+            header.textContent = "Modular CPU";
+            modCard.appendChild(header);
+            const installedMsg = document.createElement('div');
+            installedMsg.style.fontSize = '1.5em';
+            installedMsg.style.fontWeight = 'bold';
+            installedMsg.style.textAlign = 'center';
+            installedMsg.textContent = "Installed";
+            modCard.appendChild(installedMsg);
+            workspace.appendChild(modCard);
+            continue;
+        }
         const categoryGroup = document.createElement('div');
         categoryGroup.className = 'category-group';
 
@@ -1349,10 +1374,11 @@
 
     // Merge upgrades
     function mergeUpgrades(upgrade1, upgrade2) {
-      const newValue = parseFloat((upgrade1.value + upgrade2.value).toFixed(2));
+      // For CPU cores, their values add up instead of defaulting.
+      let newValue = (upgrade1.value + upgrade2.value);
       const newTotalSpent = upgrade1.totalSpent + upgrade2.totalSpent;
       upgrades = upgrades.filter(u => u !== upgrade1 && u !== upgrade2);
-      upgrades.push({ type: upgrade1.type, value: newValue, totalSpent: newTotalSpent });
+      upgrades.push({ type: upgrade1.type, value: parseFloat(newValue.toFixed(2)), totalSpent: newTotalSpent });
       renderUpgrades();
       updateDisplay();
       saveGame();
@@ -1619,15 +1645,15 @@
     function toggleAI() {
       aiEnabled = !aiEnabled;
       if (aiEnabled) {
-        if (hyperAIActive) {
-          activateHyperAI();
-        } else {
-          activateAIAssistant();
-        }
-        showNotification('AI Assistant activated');
+          if (hyperAIActive) {
+              activateHyperAI();
+          } else {
+              activateAIAssistant();
+          }
+          showNotification('AI Assistant activated');
       } else {
-        clearInterval(aiAssistantInterval);
-        showNotification('AI Assistant deactivated');
+          clearInterval(aiAssistantInterval);
+          showNotification('AI Assistant deactivated');
       }
       renderUpgrades();
       saveAIPreferences();
