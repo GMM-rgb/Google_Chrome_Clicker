@@ -17,6 +17,7 @@
       padding: 20px;
       box-sizing: border-box;
       overflow-x: hidden;
+      overflow-y: hidden;
       position: relative; /* Ensure body is positioned correctly */
     }
 
@@ -834,9 +835,12 @@
     let aiSpendingLimit = Infinity;
     let aiPriority = 'expensive';
     let aiEnabled = true;
-    // Added new global flag for Modular CPU
     let modularCpuInstalled = false;
     let gameLoopInterval;
+    let lastUIUpdate = 0;
+    const UI_UPDATE_THROTTLE = 100; // Minimum ms between UI updates
+    let isUpdating = false;
+    let uiUpdateQueued = false;
 
     // Error messages for clicking
     const errorMessages = [
@@ -1037,6 +1041,7 @@
     }, { once: true });
 
     function setZIndex(element, zIndex) {
+      element.style.zIndex = zIndex;
     }
 
     function wait(ms) {
@@ -1173,6 +1178,8 @@
             break;
           case 'speed':
             upgradeValue = 1;
+            speedMultiplier *= 1.5; // Increase speed multiplier
+            updateGameLoopInterval();
             break;
           case 'power':
             upgradeValue = 1;
@@ -1592,12 +1599,6 @@
       // Save AI state
       saveAIState();
     }
-
-    // Add these variables at the top with other game variables
-    let isUpdating = false;
-    let uiUpdateQueued = false;
-    let lastUIUpdate = 0;
-    const UI_UPDATE_THROTTLE = 100; // Minimum ms between UI updates
 
     // Replace the updateDisplay function
     function updateDisplay() {
