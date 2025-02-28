@@ -742,8 +742,8 @@
       const victoryButton = document.getElementById('victoryButton');
       const backgroundMusic = document.getElementById('backgroundMusic');
       backgroundMusic.volume = 0.35; // Set volume to 35%
-      notificationSound.volume = 0.85; // Set volume to 85%
-      clickSound.volume = 0.65; // Set volume to 65%
+      notificationSound.volume = 0.425; // Set volume to 42.5%
+      clickSound.volume = 0.25; // Set volume to 25%
 
       function attachEventListeners() {
         // Re-select storeItems here after the DOM is fully loaded
@@ -855,7 +855,7 @@
 
     // Play notification sound
     function playNotificationSound() {
-      const notificationSound = document.getElementById('notificationSound').cloneNode();
+      const notificationSound = document.getElementById('notificationSound');
       notificationSound.play();
     }
 
