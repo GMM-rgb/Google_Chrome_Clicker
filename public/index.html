@@ -44,6 +44,7 @@
     }
 
     .workspace {
+      flex: auto;
       flex-grow: 1;
       padding: 15px;
       background: rgba(255, 255, 255, 0.2);
@@ -127,8 +128,10 @@
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      height: fit-content;
-      overflow: hidden;
+      height: safe-area-inset-bottom;
+      max-height: 67.5vh;
+      overflow-x: hidden;
+      overflow-y: auto;
       z-index: 2; /* Ensure store is above other elements */
     }
 
