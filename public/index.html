@@ -2222,7 +2222,8 @@ Total Spent: ${upgrade.totalSpent.toLocaleString()}`;
       uiUpdateQueued = false;
 
       try {
-        scoreDisplay.textContent = Math.floor(score).toLocaleString();
+        // Use toLocaleString to format the score with commas
+        scoreDisplay.textContent = Math.floor(score).toLocaleString('en-US');
         requestAnimationFrame(() => {
           renderUpgrades();
           isUpdating = false;
@@ -2254,9 +2255,9 @@ Total Spent: ${upgrade.totalSpent.toLocaleString()}`;
 
         if (autoClickerValue > 0) {
           score += autoClickerValue;
-          scoreDisplay.textContent = Math.floor(score).toLocaleString();
+          // Use toLocaleString here as well
+          scoreDisplay.textContent = Math.floor(score).toLocaleString('en-US');
 
-          // Only trigger full UI update occasionally
           const now = Date.now();
           if (now - lastUIUpdate > 1000) {
             updateDisplay();
