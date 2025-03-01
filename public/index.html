@@ -1857,7 +1857,7 @@
         const type = item.dataset.type;
         const baseCost = parseInt(item.dataset.cost);
         const currentCost = calculateCurrentCost(type, baseCost);
-        item.querySelector('.cost').textContent = currentCost.toFixed(0);
+        item.querySelector('.cost').textContent = currentCost.toLocaleString();
       });
     }
 
@@ -1973,7 +1973,9 @@
         groupedUpgrades[type].forEach(upgrade => {
           const upgradeCard = document.createElement('div');
           upgradeCard.className = 'upgrade-card';
-          upgradeCard.textContent = `${capitalize(type)} Upgrade\nValue: ${upgrade.value}\nTotal Spent: ${upgrade.totalSpent}`;
+          upgradeCard.textContent = `${capitalize(type)} Upgrade
+Value: ${upgrade.value}
+Total Spent: ${upgrade.totalSpent.toLocaleString()}`;
           upgradeCard.addEventListener('click', () => handleUpgradeClick(upgrade, upgradeCard));
           categoryGroup.appendChild(upgradeCard);
         });
