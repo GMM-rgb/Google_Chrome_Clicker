@@ -18,7 +18,7 @@
       padding: 20px;
       box-sizing: border-box;
       overflow-x: hidden;
-      overflow-y: hidden;
+      overflow-y: auto;
       position: relative;
       /* Ensure body is positioned correctly */
     }
@@ -1057,25 +1057,32 @@
       const skipButton = document.querySelector('.skip-button');
       const mainContent = document.querySelectorAll('.header, .main-container, .click-area');
       let scoreDisplay = document.getElementById('score');
+      let cutsceneActive = true;
 
       async function playCutscene() {
+        if (!cutsceneActive) return;
+
         // Show Chrome icon
         chromeIcon.classList.add('show');
         await wait(1000);
+        if (!cutsceneActive) return;
 
         // Show and animate loading bar
         loadingBarContainer.style.opacity = '1';
         await wait(500);
         loadingBar.style.width = '100%';
         await wait(3000);
+        if (!cutsceneActive) return;
 
         // Show error state
         loadingBar.classList.add('error');
         await wait(1000);
+        if (!cutsceneActive) return;
 
         // Show error dialog
         errorBox.style.display = 'block';
         await wait(2000);
+        if (!cutsceneActive) return;
 
         // Show critical error
         errorBox.innerHTML = `
@@ -1084,6 +1091,7 @@
           <p>Your system will now restart.</p>
         `;
         await wait(2000);
+        if (!cutsceneActive) return;
 
         // Simulate shutdown
         blackScreen.style.display = 'block';
@@ -1098,6 +1106,8 @@
         blackScreen.style.opacity = '1';
         errorBox.style.display = 'none';
         await wait(500);
+        if (!cutsceneActive) return;
+
         // Show reboot text
         const rebootText = document.createElement('div');
         rebootText.classList.add('reboot-text');
@@ -1105,6 +1115,7 @@
         document.body.appendChild(rebootText);
         await wait(2000);
         await wait(1000);
+        if (!cutsceneActive) return;
 
         // Show console interface
         consoleInterface.style.display = 'block';
@@ -1127,6 +1138,7 @@
         for (const line of consoleLines) {
           consoleInterface.textContent += line + '\n';
           await wait(1000);
+          if (!cutsceneActive) return;
         }
 
         // Show start button
@@ -1155,6 +1167,7 @@
 
       // Skip button functionality
       skipButton.addEventListener('click', () => {
+        cutsceneActive = false;
         cutscene.style.display = 'none';
         blackScreen.style.display = 'none';
         startButton.style.display = 'none';
