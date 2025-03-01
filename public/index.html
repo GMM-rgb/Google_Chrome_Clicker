@@ -2726,7 +2726,7 @@
     function spawnErrorWave() {
       const animations = ['fall', 'float', 'shake', 'spin', 'bounce', 'chaos', 'zigzag'];
       const waves = 4; // Number of error waves
-      const errorsPerWave = 50; // Number of errors per wave
+      const errorsPerWave = 25; // Number of errors per wave
       
       for (let wave = 0; wave < waves; wave++) {
         setTimeout(() => {
@@ -2762,14 +2762,14 @@
         return curve;
       }
       
-      distortion.curve = makeDistortionCurve(400);
+      distortion.curve = makeDistortionCurve(200);
       oscillator.connect(distortion);
       distortion.connect(gainNode);
       gainNode.connect(ctx.destination);
       
       oscillator.type = 'square';
       oscillator.frequency.value = 440;
-      gainNode.gain.value = 0.3;
+      gainNode.gain.value = 0.05;
       
       oscillator.start();
       setTimeout(() => {
