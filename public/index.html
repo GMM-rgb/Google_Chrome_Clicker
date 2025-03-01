@@ -295,6 +295,7 @@
       margin-top: 20px;
       background: rgba(255, 255, 255, 0.9);
       padding: 10px;
+      border: 2px solid #2196F3;
       border-radius: 8px;
       width: 100%;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -855,6 +856,7 @@
       border-radius: 10px;
       max-height: 80vh;
       overflow-y: auto;
+      transition: all 0.5s ease-out;
     }
   </style>
 </head>
@@ -1037,7 +1039,7 @@
 
   <!-- Victory Overlay -->
   <div id="victoryOverlay" class="victory-overlay">
-    <div class="victory-message">Congratulations! You've launched Chrome!</div>
+    <div class="victory-message">Congratulations! You've launched Chrome! After... Error: Too many clicks.</div>
     <button id="victoryButton" class="victory-button">Restart Game</button>
   </div>
 
@@ -1095,6 +1097,13 @@
         await wait(100);
         blackScreen.style.opacity = '1';
         errorBox.style.display = 'none';
+        await wait(500);
+        // Show reboot text
+        const rebootText = document.createElement('div');
+        rebootText.classList.add('reboot-text');
+        rebootText.textContent = 'Rebooting...';
+        document.body.appendChild(rebootText);
+        await wait(2000);
         await wait(1000);
 
         // Show console interface
@@ -1122,14 +1131,19 @@
 
         // Show start button
         await wait(1000);
-        consoleInterface.style.display = 'none';
+        consoleInterface.style.marginTop = '0%';
+        consoleInterface.style.maxHeight = '50vh';
+        consoleInterface.style.overflowY = 'auto';
+        consoleInterface.style.top = 'safe-area-inset-top';
         startButton.style.display = 'block';
+        skipButton.style.display = 'none';
 
         // Add click handler for start button
         startButton.addEventListener('click', () => {
           blackScreen.style.opacity = '0';
           setTimeout(() => {
             cutscene.style.display = 'none';
+            consoleInterface.style.display = 'none';
             blackScreen.style.display = 'none';
             startButton.style.display = 'none';
             // Show main game content
@@ -1144,6 +1158,8 @@
         cutscene.style.display = 'none';
         blackScreen.style.display = 'none';
         startButton.style.display = 'none';
+        consoleInterface.style.display = 'none';
+        errorBox.style.display = 'none';
         mainContent.forEach(el => el.style.display = 'flex');
         updateDisplay(); // Ensure score is updated
       });
@@ -1409,20 +1425,21 @@
       });
       // Clone and play the click sound
       const clickSound = document.getElementById('clickSound');
+      clickSound.play();
 
       // Play startup sound once on first click
-      if (!startupSoundPlayed) {
-        console.log(`Playing startup sound`);
-        try {
-          clickSound.play();
-        } catch (error) {
-          console.error('Failed to play click sound:', error);
-          return;
-        } finally {
-          startupSoundPlayed = true;
-          console.log(`Click sound played: ${startupSoundPlayed}`);
-        }
-      }
+      //if (!startupSoundPlayed) {
+      //  console.log(`Playing startup sound`);
+      //  try {
+      //    clickSound.play();
+      //  } catch (error) {
+      //    console.error('Failed to play click sound:', error);
+      //    return;
+      //  } finally {
+      //    startupSoundPlayed = true;
+      //    console.log(`Click sound played: ${startupSoundPlayed}`);
+      //  }
+      //}
 
       let clickValue = calculateClickValue();
 
