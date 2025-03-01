@@ -951,6 +951,44 @@
       25% { transform: translate(-52%, -48%) scale(1.02); }
       75% { transform: translate(-48%, -52%) scale(0.98); }
     }
+
+    .error-trail {
+      position: absolute;
+      opacity: 0.3;
+      pointer-events: none;
+      filter: blur(2px);
+      animation: fadeOut 1s forwards;
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+      }
+    }
+
+    @keyframes chaosWave {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(100vw, 50vh) rotate(90deg); }
+      50% { transform: translate(50vw, 100vh) rotate(180deg); }
+      75% { transform: translate(-50vw, 50vh) rotate(270deg); }
+      100% { transform: translate(0, 0) rotate(360deg); }
+    }
+
+    @keyframes zigzag {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(100vw, -50vh) rotate(-45deg); }
+      50% { transform: translate(0, 100vh) rotate(45deg); }
+      75% { transform: translate(-100vw, -50vh) rotate(-45deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    .error-spam.chaos {
+      animation: chaosWave 8s linear infinite;
+    }
+
+    .error-spam.zigzag {
+      animation: zigzag 6s linear infinite;
+    }
   </style>
 </head>
 
@@ -2646,24 +2684,61 @@
       
       document.body.appendChild(error);
       
+      // Create trailing effect
+      let lastX = x;
+      let lastY = y;
+      
+      function createTrail() {
+        const rect = error.getBoundingClientRect();
+        const newX = rect.left;
+        const newY = rect.top;
+        
+        if (Math.abs(newX - lastX) > 5 || Math.abs(newY - lastY) > 5) {
+          const trail = error.cloneNode(true);
+          trail.classList.add('error-trail');
+          trail.style.left = `${lastX}px`;
+          trail.style.top = `${lastY}px`;
+          document.body.appendChild(trail);
+          
+          setTimeout(() => trail.remove(), 1000);
+          
+          lastX = newX;
+          lastY = newY;
+        }
+      }
+      
+      // Create trails every 50ms
+      const trailInterval = setInterval(createTrail, 50);
+      
       // Play error sound
       const errorSound = document.getElementById('errorSound').cloneNode();
-      errorSound.volume = 0.2; // Lower volume for spam
+      errorSound.volume = 0.15; // Lower volume for spam
+      errorSound.playbackRate = 1 + Math.random() * 0.5; // Random pitch variation
       errorSound.play();
       
-      // Remove after animation
-      setTimeout(() => error.remove(), 5000);
+      // Remove error and stop trail creation after animation
+      setTimeout(() => {
+        clearInterval(trailInterval);
+        error.remove();
+      }, 8000);
     }
 
     function spawnErrorWave() {
-      const animations = ['fall', 'float', 'shake', 'spin', 'bounce'];
-      for (let i = 0; i < 15; i++) {
+      const animations = ['fall', 'float', 'shake', 'spin', 'bounce', 'chaos', 'zigzag'];
+      const waves = 4; // Number of error waves
+      const errorsPerWave = 50; // Number of errors per wave
+      
+      for (let wave = 0; wave < waves; wave++) {
         setTimeout(() => {
-          const x = Math.random() * window.innerWidth;
-          const y = Math.random() * window.innerHeight;
-          const animation = animations[Math.floor(Math.random() * animations.length)];
-          createErrorSpam(x, y, animation);
-        }, i * 200);
+          for (let i = 0; i < errorsPerWave; i++) {
+            setTimeout(() => {
+              const x = Math.random() * window.innerWidth;
+              const y = Math.random() * window.innerHeight;
+              const animation = animations[Math.floor(Math.random() * animations.length)];
+              createErrorSpam(x, y, animation);
+            }, i * 100); // Spawn errors faster (100ms apart)
+          }
+        }, wave * 1000); // Start new wave every second
       }
     }
 
