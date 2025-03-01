@@ -907,6 +907,7 @@
       z-index: 10002;
       min-width: 300px;
       display: none;
+      animation: shake 0.2s infinite;
     }
 
     .mega-error .title-bar {
@@ -943,6 +944,12 @@
     @keyframes errorBounce {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-30px); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      25% { transform: translate(-52%, -48%) scale(1.02); }
+      75% { transform: translate(-48%, -52%) scale(0.98); }
     }
   </style>
 </head>
@@ -1023,6 +1030,7 @@
   <audio id="cutsceneSound1" src="assets/sounds/cutscene_sound_1.mp3" preload="auto"></audio>
   <audio id="cutsceneSound2" src="assets/sounds/cutscene_sound_2.mp3" preload="auto"></audio>
   <audio id="cutsceneSound3" src="assets/sounds/cutscene_sound_3.mp3" preload="auto"></audio>
+  <audio id="megaErrorSound" preload="auto"></audio>
 
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
@@ -1199,6 +1207,7 @@
         spawnErrorWave();
         const megaError = document.querySelector('.mega-error');
         megaError.style.display = 'block';
+        createDistortedErrorSound(); // Play distorted sound
         cutsceneSound3.play();
         await wait(3000);
         if (!cutsceneActive) return;
@@ -2637,6 +2646,11 @@
       
       document.body.appendChild(error);
       
+      // Play error sound
+      const errorSound = document.getElementById('errorSound').cloneNode();
+      errorSound.volume = 0.2; // Lower volume for spam
+      errorSound.play();
+      
       // Remove after animation
       setTimeout(() => error.remove(), 5000);
     }
@@ -2651,6 +2665,42 @@
           createErrorSpam(x, y, animation);
         }, i * 200);
       }
+    }
+
+    function createDistortedErrorSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      const distortion = ctx.createWaveShaper();
+      
+      // Create distortion curve
+      function makeDistortionCurve(amount) {
+        const k = typeof amount === 'number' ? amount : 50;
+        const n_samples = 44100;
+        const curve = new Float32Array(n_samples);
+        const deg = Math.PI / 180;
+        
+        for (let i = 0; i < n_samples; i++) {
+          const x = (i * 2) / n_samples - 1;
+          curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+      }
+      
+      distortion.curve = makeDistortionCurve(400);
+      oscillator.connect(distortion);
+      distortion.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.type = 'square';
+      oscillator.frequency.value = 440;
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        ctx.close();
+      }, 500);
     }
   </script>
 </body>
