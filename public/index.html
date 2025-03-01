@@ -1269,7 +1269,7 @@
         chromeIcon.style.display = 'none';
 
         // Remove all error spams
-        document.querySelectorAll('.error-spam').forEach(el => el.remove());
+        document.querySelectorAll('.error-spam, .error-message').forEach(el => el.remove());
 
         // Continue with existing shutdown sequence...
         // Show error dialog
@@ -1285,7 +1285,7 @@
         `;
         await wait(350);
         // Clear any remaining error spam
-        document.querySelectorAll('.error-spam').forEach(el => el.remove());
+        document.querySelectorAll('.error-spam, .error-message').forEach(el => el.remove());
 
         cutsceneSound3.play();
         await wait(2000);
