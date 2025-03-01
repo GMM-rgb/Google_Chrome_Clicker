@@ -934,6 +934,9 @@
   <audio id="notificationSound" src="assets/sounds/notification.mp3" preload="auto"></audio>
   <audio id="buttonSound" src="assets/sounds/button_click.mp3" preload="auto"></audio>
   <audio id="backgroundMusic" src="assets/sounds/background_music.mp3" preload="auto" loop></audio>
+  <audio id="cutsceneSound1" src="assets/sounds/cutscene_sound_1.mp3" preload="auto"></audio>
+  <audio id="cutsceneSound2" src="assets/sounds/cutscene_sound_2.mp3" preload="auto"></audio>
+  <audio id="cutsceneSound3" src="assets/sounds/cutscene_sound_3.mp3" preload="auto"></audio>
 
   <!-- Expanded store overlay -->
   <div id="expandedStore" class="expanded-store">
@@ -1056,6 +1059,10 @@
       const startButton = document.querySelector('.start-button');
       const skipButton = document.querySelector('.skip-button');
       const mainContent = document.querySelectorAll('.header, .main-container, .click-area');
+      const backgroundMusic = document.getElementById('backgroundMusic');
+      const cutsceneSound1 = document.getElementById('cutsceneSound1');
+      const cutsceneSound2 = document.getElementById('cutsceneSound2');
+      const cutsceneSound3 = document.getElementById('cutsceneSound3');
       let scoreDisplay = document.getElementById('score');
       let cutsceneActive = true;
 
@@ -1064,6 +1071,7 @@
 
         // Show Chrome icon
         chromeIcon.classList.add('show');
+        cutsceneSound1.play();
         await wait(1000);
         if (!cutsceneActive) return;
 
@@ -1071,6 +1079,7 @@
         loadingBarContainer.style.opacity = '1';
         await wait(500);
         loadingBar.style.width = '100%';
+        cutsceneSound2.play();
         await wait(3000);
         if (!cutsceneActive) return;
 
@@ -1090,6 +1099,7 @@
           <p>A critical error has occurred.</p>
           <p>Your system will now restart.</p>
         `;
+        cutsceneSound3.play();
         await wait(2000);
         if (!cutsceneActive) return;
 
@@ -1161,6 +1171,7 @@
             // Show main game content
             mainContent.forEach(el => el.style.display = 'flex');
             updateDisplay(); // Ensure score is updated
+            startBackgroundMusic(); // Start background music
           }, 500);
         });
       }
@@ -1175,6 +1186,7 @@
         errorBox.style.display = 'none';
         mainContent.forEach(el => el.style.display = 'flex');
         updateDisplay(); // Ensure score is updated
+        startBackgroundMusic(); // Start background music
       });
 
       // Show skip button after a delay
@@ -1335,7 +1347,6 @@
       const finishButton = document.getElementById('finishButton');
       const victoryOverlay = document.getElementById('victoryOverlay');
       const victoryButton = document.getElementById('victoryButton');
-      const backgroundMusic = document.getElementById('backgroundMusic');
       backgroundMusic.volume = 0.35; // Set volume to 35%
       notificationSound.volume = 0.425; // Set volume to 42.5%
       clickSound.volume = 0.25; // Set volume to 25%
@@ -1377,9 +1388,6 @@
           resetGame();
           playButtonSound();
         });
-
-        // Start background music after user interaction
-        document.body.addEventListener('click', startBackgroundMusic, { once: true });
       }
 
       attachEventListeners();
@@ -1416,7 +1424,6 @@
 
     // Play background music with a delay between loops
     async function startBackgroundMusic() {
-      const backgroundMusic = document.getElementById('backgroundMusic');
       while (true) {
         backgroundMusic.play();
         await wait(backgroundMusic.duration * 1000);
@@ -1439,20 +1446,6 @@
       // Clone and play the click sound
       const clickSound = document.getElementById('clickSound');
       clickSound.play();
-
-      // Play startup sound once on first click
-      //if (!startupSoundPlayed) {
-      //  console.log(`Playing startup sound`);
-      //  try {
-      //    clickSound.play();
-      //  } catch (error) {
-      //    console.error('Failed to play click sound:', error);
-      //    return;
-      //  } finally {
-      //    startupSoundPlayed = true;
-      //    console.log(`Click sound played: ${startupSoundPlayed}`);
-      //  }
-      //}
 
       let clickValue = calculateClickValue();
 
