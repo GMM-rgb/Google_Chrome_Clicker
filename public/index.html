@@ -353,6 +353,9 @@
       background: rgb(250, 128, 114);
       padding-inline-end: 40px;
       padding: 20px;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      transform-origin: center;
+      animation: errorPop 0.3s ease-out;
     }
 
     .error-message.show {
@@ -893,7 +896,15 @@
     }
 
     .error-spam.bounce {
-      animation: errorBounce 2s ease-in-out infinite;
+      animation: bounceAround 8s linear infinite;
+    }
+
+    .error-spam.chaos {
+      animation: chaosWave 6s linear infinite;
+    }
+
+    .error-spam.zigzag {
+      animation: zigzag 7s linear infinite;
     }
 
     .mega-error {
@@ -957,7 +968,6 @@
       position: absolute;
       opacity: 0.3;
       pointer-events: none;
-      filter: blur(2px);
       animation: fadeOut 1s forwards;
     }
 
@@ -983,6 +993,13 @@
       100% { transform: translate(0, 0) rotate(0deg); }
     }
 
+    @keyframes bounceAround {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(calc(100vw - 100%), 50vh) rotate(90deg); }
+      50% { transform: translate(50vw, calc(100vh - 100%)) rotate(180deg); }
+      75% { transform: translate(0, 50vh) rotate(270deg); }
+    }
+
     .error-spam.chaos {
       animation: chaosWave 8s linear infinite;
     }
@@ -995,6 +1012,12 @@
       font-size: 1.5em;
       font-weight: bold;
       margin: 0;
+    }
+
+    @keyframes errorPop {
+      0% { transform: scale(0) rotate(-10deg); }
+      50% { transform: scale(1.2) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); }
     }
   </style>
 </head>
@@ -2687,6 +2710,17 @@
           <p>${errorMessages[Math.floor(Math.random() * errorMessages.length)]}</p>
         </div>
       `;
+      
+      // Calculate maximum positions based on viewport and error size
+      const errorWidth = 300; // Approximate width of error message
+      const errorHeight = 150; // Approximate height of error message
+      const maxX = window.innerWidth - errorWidth;
+      const maxY = window.innerHeight - errorHeight;
+      
+      // Constrain position to viewport
+      x = Math.min(Math.max(0, x), maxX);
+      y = Math.min(Math.max(0, y), maxY);
+      
       error.style.left = `${x}px`;
       error.style.top = `${y}px`;
       
@@ -2699,61 +2733,66 @@
       
       document.body.appendChild(error);
       
-      // Create trailing effect
-      let lastX = x;
-      let lastY = y;
-      
-      function createTrail() {
-        const rect = error.getBoundingClientRect();
-        const newX = rect.left;
-        const newY = rect.top;
+      // Create trailing effect for bouncing errors
+      if (['bounce', 'chaos', 'zigzag'].includes(animationType)) {
+        let lastX = x;
+        let lastY = y;
         
-        if (Math.abs(newX - lastX) > 5 || Math.abs(newY - lastY) > 5) {
-          const trail = error.cloneNode(true);
-          trail.classList.add('error-trail');
-          trail.style.left = `${lastX}px`;
-          trail.style.top = `${lastY}px`;
-          document.body.appendChild(trail);
+        function createTrail() {
+          const rect = error.getBoundingClientRect();
+          const newX = rect.left;
+          const newY = rect.top;
           
-          setTimeout(() => trail.remove(), 1000);
-          
-          lastX = newX;
-          lastY = newY;
+          if (Math.abs(newX - lastX) > 5 || Math.abs(newY - lastY) > 5) {
+            const trail = error.cloneNode(true);
+            trail.classList.add('error-trail');
+            trail.style.left = `${lastX}px`;
+            trail.style.top = `${lastY}px`;
+            trail.style.transform = `scale(${scale * 0.9})`;
+            document.body.appendChild(trail);
+            
+            setTimeout(() => trail.remove(), 500);
+            
+            lastX = newX;
+            lastY = newY;
+          }
         }
+        
+        const trailInterval = setInterval(createTrail, 50);
+        
+        setTimeout(() => {
+          clearInterval(trailInterval);
+        }, 8000);
       }
-      
-      // Create trails every 50ms
-      const trailInterval = setInterval(createTrail, 50);
       
       // Play error sound
       const errorSound = document.getElementById('errorSound').cloneNode();
-      errorSound.volume = 0.15; // Lower volume for spam
-      errorSound.playbackRate = 1 + Math.random() * 0.5; // Random pitch variation
+      errorSound.volume = 0.15;
+      errorSound.playbackRate = 1 + Math.random() * 0.5;
       errorSound.play();
       
-      // Remove error and stop trail creation after animation
+      // Remove error after animation
       setTimeout(() => {
-        clearInterval(trailInterval);
         error.remove();
       }, 8000);
     }
 
     function spawnErrorWave() {
       const animations = ['fall', 'float', 'shake', 'spin', 'bounce', 'chaos', 'zigzag'];
-      const waves = 4; // Number of error waves
-      const errorsPerWave = 25; // Number of errors per wave
+      const waves = 4;
+      const errorsPerWave = 25;
       
       for (let wave = 0; wave < waves; wave++) {
         setTimeout(() => {
           for (let i = 0; i < errorsPerWave; i++) {
             setTimeout(() => {
-              const x = Math.random() * window.innerWidth;
-              const y = Math.random() * window.innerHeight;
+              const x = Math.random() * (window.innerWidth - 300); // Account for error width
+              const y = Math.random() * (window.innerHeight - 150); // Account for error height
               const animation = animations[Math.floor(Math.random() * animations.length)];
               createErrorSpam(x, y, animation);
-            }, i * 100); // Spawn errors faster (100ms apart)
+            }, i * 100);
           }
-        }, wave * 1000); // Start new wave every second
+        }, wave * 1000);
       }
     }
 
@@ -2793,6 +2832,10 @@
       }, 500);
     }
   </script>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script> <!-- Tailwind CSS JIT Compiler -->
+  <!-- SweetAlert2 -->
+  <!--<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>-->
+  <script src="https://cdn.jsdelivr.net/npm/axios@0.24"></script> <!-- Axios -->
 </body>
 
 </html>
