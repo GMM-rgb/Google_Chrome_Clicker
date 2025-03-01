@@ -1283,6 +1283,7 @@
           <p>A critical error has occurred.</p>
           <p>Your system will now restart.</p>
         `;
+        await wait(350);
         // Clear any remaining error spam
         document.querySelectorAll('.error-spam').forEach(el => el.remove());
 
@@ -1319,7 +1320,7 @@
         blackScreen.style.background = 'rgb(0, 0, 170)';
         const consoleLines = [
           'Starting Windows XP Recovery Console...',
-          'Checking file system on C:',
+          "Checking file system on C:/",
           'The type of the file system is NTFS.',
           'Volume label is System.',
           'CHKDSK is verifying files (stage 1 of 3)...',
