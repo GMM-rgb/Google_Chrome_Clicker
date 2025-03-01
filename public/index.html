@@ -791,6 +791,8 @@
       opacity: 0;
       transition: opacity 0.5s ease;
       display: none;
+      pointer-events: none;
+      flex: 1;
     }
 
     .reboot-text {
@@ -864,6 +866,7 @@
     <div class="loading-bar-container">
       <div class="loading-bar"></div>
     </div>
+    <div class="black-screen"></div>
     <button class="skip-button">Skip Intro</button>
   </div>
 
@@ -873,7 +876,6 @@
     <p>Would you like to terminate the process?</p>
   </div>
 
-  <div class="black-screen"></div>
   <div class="console-interface"></div>
   <button class="start-button">Launch Chrome</button>
 
@@ -1083,6 +1085,13 @@
 
         // Simulate shutdown
         blackScreen.style.display = 'block';
+        loadingBarContainer.style.opacity = '0';
+        loadingBarContainer.style.display = 'none';
+        errorBox.style.opacity = '0';
+        errorBox.style.display = 'none';
+        chromeIcon.style.opacity = '0';
+        chromeIcon.style.display = 'none';
+        await wait(1000);
         await wait(100);
         blackScreen.style.opacity = '1';
         errorBox.style.display = 'none';
@@ -1124,7 +1133,7 @@
             blackScreen.style.display = 'none';
             startButton.style.display = 'none';
             // Show main game content
-            mainContent.forEach(el => el.style.display = 'block');
+            mainContent.forEach(el => el.style.display = 'flex');
             updateDisplay(); // Ensure score is updated
           }, 500);
         });
