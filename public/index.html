@@ -775,7 +775,7 @@
       padding: 20px;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
       display: none;
-      z-index: 10000;
+      z-index: 10003;
     }
 
     .error-box .title-bar {
@@ -859,8 +859,90 @@
       border: 2px solid #00ff00;
       border-radius: 10px;
       max-height: 80vh;
+      min-width: 300px;
+      max-width: 90vw;
+      overflow-x: hidden;
+      min-height: 200px;
       overflow-y: auto;
       transition: all 0.5s ease-out;
+    }
+
+    .error-spam {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10001;
+      transition: transform 0.5s ease-out;
+      animation-fill-mode: forwards;
+    }
+
+    .error-spam.fall {
+      animation: errorFall 3s ease-in forwards;
+    }
+
+    .error-spam.float {
+      animation: errorFloat 4s ease-in-out infinite;
+    }
+
+    .error-spam.shake {
+      animation: errorShake 0.5s ease-in-out infinite;
+    }
+
+    .error-spam.spin {
+      animation: errorSpin 2s linear infinite;
+    }
+
+    .error-spam.bounce {
+      animation: errorBounce 2s ease-in-out infinite;
+    }
+
+    .mega-error {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f0f0f0;
+      border: 2px solid #ff0000;
+      padding: 20px;
+      box-shadow: 0 0 50px rgba(255, 0, 0, 0.5);
+      z-index: 10002;
+      min-width: 300px;
+      display: none;
+    }
+
+    .mega-error .title-bar {
+      background: #ff0000;
+      color: white;
+      padding: 8px;
+      margin: -20px -20px 20px -20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @keyframes errorFall {
+      0% { transform: translateY(-100vh) rotate(0deg); }
+      100% { transform: translateY(100vh) rotate(360deg); }
+    }
+
+    @keyframes errorFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    @keyframes errorShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes errorSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes errorBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-30px); }
     }
   </style>
 </head>
@@ -1050,6 +1132,17 @@
     <button id="victoryButton" class="victory-button">Restart Game</button>
   </div>
 
+  <div class="mega-error">
+    <div class="title-bar">
+      <span>CRITICAL_SYSTEM_ERROR</span>
+      <span>!</span>
+    </div>
+    <h2>Fatal Error</h2>
+    <p>Chrome.exe has encountered a catastrophic error.</p>
+    <p>Error code: 0xDEADBEEF</p>
+    <p>System will now restart...</p>
+  </div>
+
   <script>
     // Add cutscene logic at the start of your script
     window.addEventListener('load', () => {
@@ -1092,6 +1185,33 @@
         await wait(1000);
         if (!cutsceneActive) return;
 
+        // Start error spam sequence
+        spawnErrorWave();
+        await wait(2000);
+        if (!cutsceneActive) return;
+
+        // Second wave of errors
+        spawnErrorWave();
+        await wait(2000);
+        if (!cutsceneActive) return;
+
+        // Final wave with mega error
+        spawnErrorWave();
+        const megaError = document.querySelector('.mega-error');
+        megaError.style.display = 'block';
+        cutsceneSound3.play();
+        await wait(3000);
+        if (!cutsceneActive) return;
+
+        // Simulate shutdown
+        blackScreen.style.display = 'block';
+        loadingBarContainer.style.opacity = '0';
+        loadingBarContainer.style.display = 'none';
+        megaError.style.display = 'none';
+        chromeIcon.style.opacity = '0';
+        chromeIcon.style.display = 'none';
+        
+        // Continue with existing shutdown sequence...
         // Show error dialog
         errorBox.style.display = 'block';
         await wait(2000);
@@ -1103,6 +1223,9 @@
           <p>A critical error has occurred.</p>
           <p>Your system will now restart.</p>
         `;
+        // Clear any remaining error spam
+        document.querySelectorAll('.error-spam').forEach(el => el.remove());
+
         cutsceneSound3.play();
         await wait(2000);
         if (!cutsceneActive) return;
@@ -2490,6 +2613,45 @@
         }
       }
     });
+
+    function createErrorSpam(x, y, animationType) {
+      const error = document.createElement('div');
+      error.className = 'error-spam';
+      error.innerHTML = `
+        <div style="background: #f0f0f0; border: 1px solid #999; padding: 15px; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+          <div style="background: #0055e5; color: white; padding: 5px; margin: -15px -15px 10px -15px;">
+            Chrome Error
+          </div>
+          <p>${errorMessages[Math.floor(Math.random() * errorMessages.length)]}</p>
+        </div>
+      `;
+      error.style.left = `${x}px`;
+      error.style.top = `${y}px`;
+      
+      // Add random size variation
+      const scale = 0.5 + Math.random() * 0.5;
+      error.style.transform = `scale(${scale})`;
+      
+      // Add animation class
+      error.classList.add(animationType);
+      
+      document.body.appendChild(error);
+      
+      // Remove after animation
+      setTimeout(() => error.remove(), 5000);
+    }
+
+    function spawnErrorWave() {
+      const animations = ['fall', 'float', 'shake', 'spin', 'bounce'];
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const x = Math.random() * window.innerWidth;
+          const y = Math.random() * window.innerHeight;
+          const animation = animations[Math.floor(Math.random() * animations.length)];
+          createErrorSpam(x, y, animation);
+        }, i * 200);
+      }
+    }
   </script>
 </body>
 
