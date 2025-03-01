@@ -854,11 +854,12 @@
       z-index: 9999;
       white-space: pre-wrap;
       text-align: left;
-      background-color: black;
+      background-color: rgba(0, 0, 135, 0.8);
       padding: 20px;
       border: 2px solid #00ff00;
       border-radius: 10px;
       max-height: 80vh;
+      width: 90vw;
       min-width: 300px;
       max-width: 90vw;
       overflow-x: hidden;
@@ -1266,7 +1267,10 @@
         megaError.style.display = 'none';
         chromeIcon.style.opacity = '0';
         chromeIcon.style.display = 'none';
-        
+
+        // Remove all error spams
+        document.querySelectorAll('.error-spam').forEach(el => el.remove());
+
         // Continue with existing shutdown sequence...
         // Show error dialog
         errorBox.style.display = 'block';
@@ -1312,6 +1316,7 @@
 
         // Show console interface
         consoleInterface.style.display = 'block';
+        blackScreen.style.background = 'rgb(0, 0, 170)';
         const consoleLines = [
           'Starting Windows XP Recovery Console...',
           'Checking file system on C:',
@@ -1336,7 +1341,7 @@
 
         // Show start button
         await wait(1000);
-        consoleInterface.style.marginTop = '0%';
+        consoleInterface.style.marginTop = '-13.75%';
         consoleInterface.style.maxHeight = '50vh';
         consoleInterface.style.overflowY = 'auto';
         consoleInterface.style.top = 'safe-area-inset-top';
