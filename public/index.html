@@ -33,6 +33,7 @@
     .page-title {
       color: #333;
       font-size: 3em;
+      font-weight: bold;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
       margin: 0;
       user-select: none;
@@ -1840,9 +1841,9 @@
         updateDisplay();
         saveGame();
 
-        showNotification(`${capitalize(type)} upgrade purchased!`);
+        showNotification(`${capitalize(type)} upgrade purchased! Cost: $${currentCost.toLocaleString('en-US')}`);
       } else {
-        showNotification("Not enough clicks to purchase this upgrade.");
+        showNotification(`Not enough clicks! Need: $${currentCost.toLocaleString('en-US')}`);
       }
     }
 
@@ -1904,7 +1905,7 @@
             </button>
             <button class="ai-toggle" onclick="resetAIPreferences()">Reset Preferences</button>
           </div>
-          <p>Spending Limit: $${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}</p>
+          <p>Spending Limit: $${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit.toLocaleString('en-US')}</p>
           <input type="range" class="ai-slider" min="0" max="100" value="${aiSpendingLimit === Infinity ? 100 : (aiSpendingLimit / 1000)}"
             onchange="updateSpendingLimit(this.value)">
           <select class="ai-priority" onchange="updateAIPriority(this.value)">
@@ -1931,7 +1932,7 @@
         content.innerHTML = `
             <h3>CPU Core Control</h3>
             <p>Current Cores: ${upgrades.filter(u => u.type === 'cpu-core').reduce((sum, u) => sum + u.value, 0)}</p>
-            <button class="cpu-upgrade-btn" onclick="buyCPUCore()">Add Core ($${calculateCurrentCost('cpu-core', 10000)})</button>
+            <button class="cpu-upgrade-btn" onclick="buyCPUCore()">Add Core ($${calculateCurrentCost('cpu-core', 10000).toLocaleString('en-US')})</button>
         `;
         cpuCard.appendChild(content);
         workspace.appendChild(cpuCard);
@@ -2451,7 +2452,7 @@ Total Spent: ${upgrade.totalSpent.toLocaleString()}`;
 
     function updateSpendingLimit(value) {
       aiSpendingLimit = value < 100 ? value * 1000 : Infinity;
-      showNotification(`AI spending limit set to ${aiSpendingLimit === Infinity ? '∞' : aiSpendingLimit}`);
+      showNotification(`AI spending limit set to ${aiSpendingLimit === Infinity ? '∞' : '$' + aiSpendingLimit.toLocaleString('en-US')}`);
       saveAIState();
       renderUpgrades();
     }
