@@ -1,3 +1,0 @@
-# Prevent node modules from being part of the repositor
-node_modules
-.vercel
